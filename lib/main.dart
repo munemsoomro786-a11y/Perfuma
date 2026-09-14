@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -81,6 +81,7 @@ class AuraApp extends StatelessWidget {
         fontFamily: 'Helvetica',
       ),
       routerConfig: _router,
+      builder: (context, child) => SelectionArea(child: child!),
     );
   }
 }
@@ -847,7 +848,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                           const SizedBox(height: 40),
                           Text(
-                            'Founded in Paris, Perfuma Fragrances brings together the world\'s finest ingredients to create perfumes that are both timeless and contemporary. Each bottle is a masterpiece of design, holding within it a symphony of meticulously blended notes. We believe a perfume is more than a scentâ€”it is an Perfuma you wear.',
+                            'Founded in Paris, Perfuma Fragrances brings together the world\'s finest ingredients to create perfumes that are both timeless and contemporary. Each bottle is a masterpiece of design, holding within it a symphony of meticulously blended notes. We believe a perfume is more than a scent - it is an Perfuma you wear.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 18,
@@ -959,7 +960,7 @@ class _HomePageState extends State<HomePage> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Â© 2026 Perfuma Fragrances. All rights reserved.',
+                            '© 2026 Perfuma Fragrances. All rights reserved.',
                             style: TextStyle(color: Colors.grey[600], fontSize: 13),
                           ),
                           Row(
@@ -1728,6 +1729,8 @@ class ProductDetailsScreen extends StatelessWidget {
     ];
   }
 }
+
+
 
 
 
