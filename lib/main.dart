@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -1470,7 +1470,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
-        onTap: () => context.go('/product/${widget.product.id}'),
+        onTap: () => context.push('/product/${widget.product.id}'),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
@@ -1728,4 +1728,6 @@ class ProductDetailsScreen extends StatelessWidget {
     ];
   }
 }
+
+
 
