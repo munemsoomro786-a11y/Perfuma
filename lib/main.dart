@@ -68,6 +68,7 @@ class _HomePageState extends State<HomePage> {
   final ScrollController _scrollController = ScrollController();
   final PageController _pageController = PageController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final TextEditingController _newsletterController = TextEditingController();
   Timer? _timer;
   int _currentPage = 0;
 
@@ -389,6 +390,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 Expanded(
                   child: TextField(
+                    controller: _newsletterController,
                     decoration: InputDecoration(
                       hintText: 'Enter your email',
                       hintStyle: TextStyle(color: Colors.grey[600]),
@@ -422,6 +424,20 @@ class _HomePageState extends State<HomePage> {
                       elevation: 0,
                     ),
                     onPressed: () {
+                      final email = _newsletterController.text.trim();
+                      if (email.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Please fill in your email to subscribe.'))
+                        );
+                        return;
+                      }
+                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Please enter a proper email with @ (e.g. yourname@gmail.com).'))
+                        );
+                        return;
+                      }
+                      _newsletterController.clear();
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Subscribed successfully!')));
                     },
                     child: const Text('SUBSCRIBE'),
