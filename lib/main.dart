@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -513,32 +513,68 @@ class _HomePageState extends State<HomePage> {
     final categories = ['All Perfumes', 'Best Sellers', 'New Arrivals', 'Gift Sets'];
     return Padding(
       padding: const EdgeInsets.only(bottom: 40),
-      child: Wrap(
-        spacing: 20,
-        runSpacing: 20,
-        alignment: WrapAlignment.center,
-        children: List.generate(categories.length, (index) {
-          final isSelected = _selectedCategoryIndex == index;
-          return InkWell(
-            onTap: () => setState(() => _selectedCategoryIndex = index),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                color: isSelected ? Colors.black : Colors.transparent,
-                border: Border.all(color: Colors.black),
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: Text(
-                categories[index],
-                style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.black,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
+      child: Column(
+        children: [
+          Container(
+            width: 400,
+            constraints: const BoxConstraints(maxWidth: 400),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: TextField(
+              onChanged: (value) => setState(() => _searchQuery = value),
+              decoration: InputDecoration(
+                hintText: 'Search fragrances by name or note...',
+                hintStyle: const TextStyle(color: Colors.grey),
+                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: const BorderSide(color: Colors.black),
                 ),
               ),
             ),
-          );
-        }),
+          ),
+          const SizedBox(height: 30),
+          Wrap(
+            spacing: 20,
+            runSpacing: 20,
+            alignment: WrapAlignment.center,
+            children: List.generate(categories.length, (index) {
+              final isSelected = _selectedCategoryIndex == index;
+              return InkWell(
+                onTap: () => setState(() {
+                  _selectedCategoryIndex = index;
+                  _searchQuery = ''; // Reset search on category change
+                }),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isSelected ? Colors.black : Colors.transparent,
+                    border: Border.all(color: Colors.black),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: Text(
+                    categories[index],
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.black,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
       ),
     );
   }
@@ -624,7 +660,15 @@ class _HomePageState extends State<HomePage> {
             pinned: true,
             elevation: 2,
             toolbarHeight: 80,
-            title: Image.asset('images/perfuma_logo.jpg', height: 40),
+            title: const Text(
+              'Perfuma',
+              style: TextStyle(
+                fontFamily: 'Georgia',
+                fontSize: 28,
+                letterSpacing: 4,
+                color: Colors.black,
+              ),
+            ),
             actions: [
               // Nav Links (Hidden on small screens)
               if (!isMobile)
@@ -645,6 +689,33 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ],
                 ),
+              // Currency Switcher
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Center(
+                  child: ValueListenableBuilder<String>(
+                    valueListenable: currencyNotifier,
+                    builder: (context, currency, _) {
+                      return DropdownButton<String>(
+                        value: currency,
+                        underline: const SizedBox(),
+                        icon: const Icon(Icons.keyboard_arrow_down, size: 16),
+                        items: ['PKR', 'USD', 'EUR'].map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          if (newValue != null) {
+                            currencyNotifier.value = newValue;
+                          }
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ),
               const SizedBox(width: 20),
               // Cart Icon with Badge
               ValueListenableBuilder<List<CartItem>>(
@@ -1488,6 +1559,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
     );
   }
 }
+
 
 
 
