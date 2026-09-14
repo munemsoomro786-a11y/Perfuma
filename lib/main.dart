@@ -1047,7 +1047,22 @@ class CartDrawer extends StatelessWidget {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'Georgia')),
+                                      Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Expanded(
+                                            child: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'Georgia')),
+                                          ),
+                                          InkWell(
+                                            onTap: () {
+                                              final list = List<CartItem>.from(cartNotifier.value);
+                                              list.removeAt(index);
+                                              cartNotifier.value = list;
+                                            },
+                                            child: const Icon(Icons.delete_outline, color: Colors.grey, size: 20),
+                                          ),
+                                        ],
+                                      ),
                                       const SizedBox(height: 8),
                                       Text(item.price, style: const TextStyle(color: Color(0xFFc9a063), fontSize: 16)),
                                       const SizedBox(height: 12),
