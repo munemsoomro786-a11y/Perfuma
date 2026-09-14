@@ -624,15 +624,7 @@ class _HomePageState extends State<HomePage> {
             pinned: true,
             elevation: 2,
             toolbarHeight: 80,
-            title: const Text(
-              'Perfuma',
-              style: TextStyle(
-                fontFamily: 'Georgia',
-                fontSize: 28,
-                letterSpacing: 4,
-                color: Colors.black,
-              ),
-            ),
+            title: Image.asset('images/perfuma_logo.jpg', height: 40),
             actions: [
               // Nav Links (Hidden on small screens)
               if (!isMobile)
@@ -1496,6 +1488,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
     );
   }
 }
+
 
 
 
