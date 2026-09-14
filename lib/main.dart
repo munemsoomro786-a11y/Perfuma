@@ -348,9 +348,18 @@ class _HomePageState extends State<HomePage> {
             const Text('SHOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 2)),
             const SizedBox(height: 20),
             _FooterLink(text: 'All Perfumes', onTap: () => _scrollToSection(screenHeight + 400)),
-            _FooterLink(text: 'Best Sellers', onTap: () => _scrollToSection(screenHeight + 400)),
-            _FooterLink(text: 'Gift Sets', onTap: () => _scrollToSection(screenHeight + 400)),
-            _FooterLink(text: 'New Arrivals', onTap: () => _scrollToSection(screenHeight + 400)),
+            _FooterLink(
+              text: 'Best Sellers', 
+              onTap: () => _showTextDialog(context, 'Best Sellers', 'Our Best Sellers collection is currently being updated with exciting new signature fragrances. Please check back soon or explore our All Perfumes section in the meantime!')
+            ),
+            _FooterLink(
+              text: 'Gift Sets', 
+              onTap: () => _showTextDialog(context, 'Gift Sets', 'Exclusive Perfuma Gift Sets are currently sold out. Join our newsletter to be notified the moment they restock for the upcoming holiday season.')
+            ),
+            _FooterLink(
+              text: 'New Arrivals', 
+              onTap: () => _showTextDialog(context, 'New Arrivals', 'Our newest creations are maturing in our Paris laboratory and will be dropping next month! Subscribe to our newsletter for exclusive early access.')
+            ),
           ],
         ),
       ),
