@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -28,7 +28,7 @@ String formatPrice(int basePricePKR, String currency) {
   if (currency == 'USD') {
     return '\${(basePricePKR * 0.0036).toStringAsFixed(2)}';
   } else if (currency == 'EUR') {
-    return '�${(basePricePKR * 0.0033).toStringAsFixed(2)}';
+    return '€${(basePricePKR * 0.0033).toStringAsFixed(2)}';
   }
   return 'Rs. ${basePricePKR.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}';
 }
@@ -794,7 +794,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                           const SizedBox(height: 40),
                           Text(
-                            'Founded in Paris, Perfuma Fragrances brings together the world\'s finest ingredients to create perfumes that are both timeless and contemporary. Each bottle is a masterpiece of design, holding within it a symphony of meticulously blended notes. We believe a perfume is more than a scent—it is an Perfuma you wear.',
+                            'Founded in Paris, Perfuma Fragrances brings together the world\'s finest ingredients to create perfumes that are both timeless and contemporary. Each bottle is a masterpiece of design, holding within it a symphony of meticulously blended notes. We believe a perfume is more than a scentâ€”it is an Perfuma you wear.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 18,
@@ -906,7 +906,7 @@ class _HomePageState extends State<HomePage> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            '© 2026 Perfuma Fragrances. All rights reserved.',
+                            'Â© 2026 Perfuma Fragrances. All rights reserved.',
                             style: TextStyle(color: Colors.grey[600], fontSize: 13),
                           ),
                           Row(
@@ -1049,176 +1049,174 @@ class CartDrawer extends StatelessWidget {
     return Drawer(
       width: MediaQuery.of(context).size.width > 500 ? 450 : MediaQuery.of(context).size.width,
       backgroundColor: Colors.white,
-      child: ValueListenableBuilder<List<CartItem>>(
-        valueListenable: cartNotifier,
-        builder: (context, cart, child) {
-          double total = 0;
-          for (var item in cart) {
-            String numericPrice = item.price.replaceAll(RegExp(r'[^0-9]'), '');
-            if (numericPrice.isNotEmpty) {
-              total += int.parse(numericPrice) * item.quantity;
-            }
-          }
+      child: ValueListenableBuilder<String>(
+        valueListenable: currencyNotifier,
+        builder: (context, currency, child) {
+          return ValueListenableBuilder<List<CartItem>>(
+            valueListenable: cartNotifier,
+            builder: (context, cart, child) {
+              int total = 0;
+              for (var item in cart) {
+                total += item.basePrice * item.quantity;
+              }
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                padding: const EdgeInsets.only(top: 60, left: 24, right: 24, bottom: 24),
-                color: const Color(0xFFfaf9f6),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('YOUR CART', style: TextStyle(fontFamily: 'Georgia', fontSize: 24, letterSpacing: 2)),
-                    IconButton(
-                      icon: const Icon(Icons.close, size: 28), 
-                      onPressed: () => Navigator.pop(context)
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.only(top: 60, left: 24, right: 24, bottom: 24),
+                    color: const Color(0xFFfaf9f6),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('YOUR CART', style: TextStyle(fontFamily: 'Georgia', fontSize: 24, letterSpacing: 2)),
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 28), 
+                          onPressed: () => Navigator.pop(context)
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: cart.isEmpty
-                    ? const Center(
-                        child: Text('Your cart is empty.', style: TextStyle(color: Colors.grey, fontSize: 16))
-                      )
-                    : ListView.builder(
-                        itemCount: cart.length,
-                        itemBuilder: (context, index) {
-                          final item = cart[index];
-                          return Container(
-                            padding: const EdgeInsets.all(24.0),
-                            decoration: BoxDecoration(
-                              border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 80,
-                                  height: 80,
-                                  padding: const EdgeInsets.all(8),
-                                  color: const Color(0xFFfaf9f6),
-                                  child: ShimmerImage(imagePath: item.image),
+                  ),
+                  Expanded(
+                    child: cart.isEmpty
+                        ? const Center(
+                            child: Text('Your cart is empty.', style: TextStyle(color: Colors.grey, fontSize: 16))
+                          )
+                        : ListView.builder(
+                            itemCount: cart.length,
+                            itemBuilder: (context, index) {
+                              final item = cart[index];
+                              return Container(
+                                padding: const EdgeInsets.all(24.0),
+                                decoration: BoxDecoration(
+                                  border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
                                 ),
-                                const SizedBox(width: 24),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 80,
+                                      height: 80,
+                                      padding: const EdgeInsets.all(8),
+                                      color: const Color(0xFFfaf9f6),
+                                      child: ShimmerImage(imagePath: item.image),
+                                    ),
+                                    const SizedBox(width: 24),
+                                    Expanded(
+                                      child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Expanded(
-                                            child: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'Georgia')),
+                                          Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Expanded(
+                                                child: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'Georgia')),
+                                              ),
+                                              InkWell(
+                                                onTap: () {
+                                                  final list = List<CartItem>.from(cartNotifier.value);
+                                                  list.removeAt(index);
+                                                  cartNotifier.value = list;
+                                                },
+                                                child: const Icon(Icons.delete_outline, color: Colors.grey, size: 20),
+                                              ),
+                                            ],
                                           ),
-                                          InkWell(
-                                            onTap: () {
-                                              final list = List<CartItem>.from(cartNotifier.value);
-                                              list.removeAt(index);
-                                              cartNotifier.value = list;
-                                            },
-                                            child: const Icon(Icons.delete_outline, color: Colors.grey, size: 20),
-                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(formatPrice(item.basePrice, currency), style: const TextStyle(color: Color(0xFFc9a063), fontSize: 16)),
+                                          const SizedBox(height: 12),
+                                          Row(
+                                            children: [
+                                              Container(
+                                                decoration: BoxDecoration(
+                                                  border: Border.all(color: Colors.grey[300]!),
+                                                  borderRadius: BorderRadius.circular(4),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    IconButton(
+                                                      icon: const Icon(Icons.remove, size: 16),
+                                                      onPressed: () {
+                                                        final list = List<CartItem>.from(cartNotifier.value);
+                                                        if (list[index].quantity > 1) {
+                                                          list[index].quantity--;
+                                                        } else {
+                                                          list.removeAt(index);
+                                                        }
+                                                        cartNotifier.value = list;
+                                                      },
+                                                    ),
+                                                    Text('${item.quantity}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                                    IconButton(
+                                                      icon: const Icon(Icons.add, size: 16),
+                                                      onPressed: () {
+                                                        final list = List<CartItem>.from(cartNotifier.value);
+                                                        list[index].quantity++;
+                                                        cartNotifier.value = list;
+                                                      },
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          )
                                         ],
                                       ),
-                                      const SizedBox(height: 8),
-                                      Text(item.price, style: const TextStyle(color: Color(0xFFc9a063), fontSize: 16)),
-                                      const SizedBox(height: 12),
-                                      Row(
-                                        children: [
-                                          Container(
-                                            decoration: BoxDecoration(
-                                              border: Border.all(color: Colors.grey[300]!),
-                                              borderRadius: BorderRadius.circular(4),
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                IconButton(
-                                                  icon: const Icon(Icons.remove, size: 16),
-                                                  onPressed: () {
-                                                    final list = List<CartItem>.from(cartNotifier.value);
-                                                    if (list[index].quantity > 1) {
-                                                      list[index].quantity--;
-                                                    } else {
-                                                      list.removeAt(index);
-                                                    }
-                                                    cartNotifier.value = list;
-                                                  },
-                                                ),
-                                                Text('${item.quantity}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                                IconButton(
-                                                  icon: const Icon(Icons.add, size: 16),
-                                                  onPressed: () {
-                                                    final list = List<CartItem>.from(cartNotifier.value);
-                                                    list[index].quantity++;
-                                                    cartNotifier.value = list;
-                                                  },
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      )
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-              ),
-              if (cart.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -5))],
+                              );
+                            },
+                          ),
                   ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  if (cart.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(32),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -5))],
+                      ),
+                      child: Column(
                         children: [
-                          const Text('SUBTOTAL', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1, color: Colors.grey)),
-                          Text('Rs. ${total.toInt()}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24)),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('SUBTOTAL', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1, color: Colors.grey)),
+                              Text(formatPrice(total, currency), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24)),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.black,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 24),
+                              ),
+                              onPressed: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Proceeding to secure checkout...'),
+                                    backgroundColor: Color(0xFFc9a063),
+                                  )
+                                );
+                                Navigator.pop(context);
+                              },
+                              child: const Text('SECURE CHECKOUT', style: TextStyle(letterSpacing: 2, fontWeight: FontWeight.bold)),
+                            ),
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 24),
-                          ),
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Proceeding to secure checkout...'),
-                                backgroundColor: Color(0xFFc9a063),
-                              )
-                            );
-                            Navigator.pop(context);
-                          },
-                          child: const Text('SECURE CHECKOUT', style: TextStyle(letterSpacing: 2, fontWeight: FontWeight.bold)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
+                    ),
+                ],
+              );
+            },
           );
-        },
+        }
       ),
     );
   }
 }
-
-// -----------------------------------------------------------------------------
-// COMPONENTS
-// -----------------------------------------------------------------------------
 class _NavButton extends StatelessWidget {
   final String title;
   final VoidCallback onTap;
@@ -1355,14 +1353,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
                 style: const TextStyle(fontFamily: 'Georgia', fontSize: 32),
               ),
               const SizedBox(height: 10),
-              Text(
-                widget.price,
-                style: const TextStyle(
-                  color: Color(0xFFc9a063),
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              ValueListenableBuilder<String>(valueListenable: currencyNotifier, builder: (context, currency, _) => Text(formatPrice(widget.basePrice, currency), style: const TextStyle(color: Color(0xFFc9a063), fontSize: 24, fontWeight: FontWeight.bold))),
               const SizedBox(height: 30),
               Text(
                 widget.description,
@@ -1494,15 +1485,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Text(
-                      widget.price,
-                      style: const TextStyle(
-                        color: Color(0xFFc9a063),
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
-                      ),
-                    ),
+                    ValueListenableBuilder<String>(valueListenable: currencyNotifier, builder: (context, currency, _) => Text(formatPrice(widget.basePrice, currency), style: const TextStyle(color: Color(0xFFc9a063), fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 1))),
                   ],
                 ),
               ),
@@ -1513,6 +1496,9 @@ class _HoverProductCardState extends State<HoverProductCard> {
     );
   }
 }
+
+
+
 
 
 
