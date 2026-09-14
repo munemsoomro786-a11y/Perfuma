@@ -71,6 +71,7 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _newsletterController = TextEditingController();
   Timer? _timer;
   int _currentPage = 0;
+  int _selectedCategoryIndex = 0;
 
   final List<String> _heroImages = [
     'images/hero.jpg',
@@ -347,18 +348,33 @@ class _HomePageState extends State<HomePage> {
           children: [
             const Text('SHOP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 2)),
             const SizedBox(height: 20),
-            _FooterLink(text: 'All Perfumes', onTap: () => _scrollToSection(screenHeight + 400)),
             _FooterLink(
-              text: 'Best Sellers', 
-              onTap: () => _showTextDialog(context, 'Best Sellers', 'Our Best Sellers collection is currently being updated with exciting new signature fragrances. Please check back soon or explore our All Perfumes section in the meantime!')
+              text: 'All Perfumes', 
+              onTap: () {
+                setState(() => _selectedCategoryIndex = 0);
+                _scrollToSection(screenHeight + 400);
+              }
             ),
             _FooterLink(
-              text: 'Gift Sets', 
-              onTap: () => _showTextDialog(context, 'Gift Sets', 'Exclusive Perfuma Gift Sets are currently sold out. Join our newsletter to be notified the moment they restock for the upcoming holiday season.')
+              text: 'Best Sellers', 
+              onTap: () {
+                setState(() => _selectedCategoryIndex = 1);
+                _scrollToSection(screenHeight + 400);
+              }
             ),
             _FooterLink(
               text: 'New Arrivals', 
-              onTap: () => _showTextDialog(context, 'New Arrivals', 'Our newest creations are maturing in our Paris laboratory and will be dropping next month! Subscribe to our newsletter for exclusive early access.')
+              onTap: () {
+                setState(() => _selectedCategoryIndex = 2);
+                _scrollToSection(screenHeight + 400);
+              }
+            ),
+            _FooterLink(
+              text: 'Gift Sets', 
+              onTap: () {
+                setState(() => _selectedCategoryIndex = 3);
+                _scrollToSection(screenHeight + 400);
+              }
             ),
           ],
         ),
@@ -479,6 +495,80 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     ];
+  }
+
+  Widget _buildCategoryTabs() {
+    final categories = ['All Perfumes', 'Best Sellers', 'New Arrivals', 'Gift Sets'];
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 40),
+      child: Wrap(
+        spacing: 20,
+        runSpacing: 20,
+        alignment: WrapAlignment.center,
+        children: List.generate(categories.length, (index) {
+          final isSelected = _selectedCategoryIndex == index;
+          return InkWell(
+            onTap: () => setState(() => _selectedCategoryIndex = index),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.black : Colors.transparent,
+                border: Border.all(color: Colors.black),
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: Text(
+                categories[index],
+                style: TextStyle(
+                  color: isSelected ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  List<Widget> _getProductsForCategory() {
+    switch (_selectedCategoryIndex) {
+      case 1: // Best Sellers
+        return const [
+          HoverProductCard(image: 'images/rose.jpg', title: 'Velvet Rose', description: 'Damask Rose, Patchouli, Plum', price: 'Rs. 4,800'),
+          HoverProductCard(image: 'images/ocean.jpg', title: 'Ocean Breeze', description: 'Sea Salt, Driftwood, Sage', price: 'Rs. 3,300'),
+          HoverProductCard(image: 'images/amber.jpg', title: 'Forest & Spice', description: 'Amber, Cedarwood, Cinnamon', price: 'Rs. 4,200'),
+          HoverProductCard(image: 'images/vanilla.jpg', title: 'Vanille Royale', description: 'Madagascar Vanilla, Orchid', price: 'Rs. 3,900'),
+        ];
+      case 2: // New Arrivals
+        return const [
+          HoverProductCard(image: 'images/peach.jpg', title: 'Peach Blossom', description: 'White Peach, Magnolia, Vanilla', price: 'Rs. 3,400'),
+          HoverProductCard(image: 'images/sandalwood.jpg', title: 'Sandalwood Noir', description: 'Dark Sandalwood, Vetiver', price: 'Rs. 4,600'),
+          HoverProductCard(image: 'images/citrus.jpg', title: 'Citrus Fleur', description: 'Bergamot, Neroli, Lemon', price: 'Rs. 3,100'),
+          HoverProductCard(image: 'images/greentea.jpg', title: 'Matcha Zen', description: 'Green Tea, Bamboo, Bergamot', price: 'Rs. 3,200'),
+        ];
+      case 3: // Gift Sets
+        return const [
+          HoverProductCard(image: 'images/giftset_signature.jpg', title: 'The Signature Collection', description: 'Our Top 3 Perfumes Set', price: 'Rs. 12,500'),
+          HoverProductCard(image: 'images/giftset_travel.jpg', title: 'Travel Miniatures', description: '5 Mini Vials For On The Go', price: 'Rs. 8,500'),
+          HoverProductCard(image: 'images/giftset_holiday.jpg', title: 'Holiday Exclusive', description: 'Perfume & Scented Candle', price: 'Rs. 9,900'),
+        ];
+      default: // All Perfumes
+        return const [
+          HoverProductCard(image: 'images/floral.jpg', title: 'Perfuma Florale', description: 'Rose, Jasmine, White Musk', price: 'Rs. 3,500'),
+          HoverProductCard(image: 'images/amber.jpg', title: 'Forest & Spice', description: 'Amber, Cedarwood, Cinnamon', price: 'Rs. 4,200'),
+          HoverProductCard(image: 'images/citrus.jpg', title: 'Citrus Fleur', description: 'Bergamot, Neroli, Lemon', price: 'Rs. 3,100'),
+          HoverProductCard(image: 'images/minimal.jpg', title: 'Aether Minimal', description: 'Clean Cotton, White Tea', price: 'Rs. 3,800'),
+          HoverProductCard(image: 'images/ocean.jpg', title: 'Ocean Breeze', description: 'Sea Salt, Driftwood, Sage', price: 'Rs. 3,300'),
+          HoverProductCard(image: 'images/vanilla.jpg', title: 'Vanille Royale', description: 'Madagascar Vanilla, Orchid', price: 'Rs. 3,900'),
+          HoverProductCard(image: 'images/leather.jpg', title: 'Oud & Leather', description: 'Dark Oud, Rich Leather, Smoke', price: 'Rs. 4,900'),
+          HoverProductCard(image: 'images/greentea.jpg', title: 'Matcha Zen', description: 'Green Tea, Bamboo, Bergamot', price: 'Rs. 3,200'),
+          HoverProductCard(image: 'images/lavender.jpg', title: 'Lavender Night', description: 'French Lavender, Vanilla, Musk', price: 'Rs. 3,600'),
+          HoverProductCard(image: 'images/rose.jpg', title: 'Velvet Rose', description: 'Damask Rose, Patchouli, Plum', price: 'Rs. 4,800'),
+          HoverProductCard(image: 'images/sandalwood.jpg', title: 'Sandalwood Noir', description: 'Dark Sandalwood, Vetiver, Pepper', price: 'Rs. 4,600'),
+          HoverProductCard(image: 'images/peach.jpg', title: 'Peach Blossom', description: 'White Peach, Magnolia, Vanilla', price: 'Rs. 3,400'),
+        ];
+    }
   }
 
   @override
@@ -696,7 +786,9 @@ class _HomePageState extends State<HomePage> {
                           fontSize: 36,
                         ),
                       ),
-                      const SizedBox(height: 60),
+                      const SizedBox(height: 30),
+                      _buildCategoryTabs(),
+                      const SizedBox(height: 20),
                       LayoutBuilder(
                         builder: (context, constraints) {
                           int crossAxisCount = constraints.maxWidth > 900 ? 3 : (constraints.maxWidth > 600 ? 2 : 1);
@@ -707,80 +799,7 @@ class _HomePageState extends State<HomePage> {
                             childAspectRatio: 0.75,
                             crossAxisSpacing: 40,
                             mainAxisSpacing: 40,
-                            children: const [
-                              HoverProductCard(
-                                image: 'images/floral.jpg',
-                                title: 'Perfuma Florale',
-                                description: 'Rose, Jasmine, White Musk',
-                                price: 'Rs. 3,500',
-                              ),
-                              HoverProductCard(
-                                image: 'images/amber.jpg',
-                                title: 'Forest & Spice',
-                                description: 'Amber, Cedarwood, Cinnamon',
-                                price: 'Rs. 4,200',
-                              ),
-                              HoverProductCard(
-                                image: 'images/citrus.jpg',
-                                title: 'Citrus Fleur',
-                                description: 'Bergamot, Neroli, Lemon',
-                                price: 'Rs. 3,100',
-                              ),
-                              HoverProductCard(
-                                image: 'images/minimal.jpg',
-                                title: 'Aether Minimal',
-                                description: 'Clean Cotton, White Tea',
-                                price: 'Rs. 3,800',
-                              ),
-                              HoverProductCard(
-                                image: 'images/ocean.jpg',
-                                title: 'Ocean Breeze',
-                                description: 'Sea Salt, Driftwood, Sage',
-                                price: 'Rs. 3,300',
-                              ),
-                              HoverProductCard(
-                                image: 'images/vanilla.jpg',
-                                title: 'Vanille Royale',
-                                description: 'Madagascar Vanilla, Honey, Tonka',
-                                price: 'Rs. 4,500',
-                              ),
-                              HoverProductCard(
-                                image: 'images/leather.jpg',
-                                title: 'Oud & Leather',
-                                description: 'Dark Oud, Rich Leather, Smoke',
-                                price: 'Rs. 4,900',
-                              ),
-                              HoverProductCard(
-                                image: 'images/greentea.jpg',
-                                title: 'Matcha Zen',
-                                description: 'Green Tea, Bamboo, Bergamot',
-                                price: 'Rs. 3,200',
-                              ),
-                              HoverProductCard(
-                                image: 'images/lavender.jpg',
-                                title: 'Lavender Night',
-                                description: 'French Lavender, Vanilla, Musk',
-                                price: 'Rs. 3,600',
-                              ),
-                              HoverProductCard(
-                                image: 'images/rose.jpg',
-                                title: 'Velvet Rose',
-                                description: 'Damask Rose, Patchouli, Plum',
-                                price: 'Rs. 4,800',
-                              ),
-                              HoverProductCard(
-                                image: 'images/sandalwood.jpg',
-                                title: 'Sandalwood Noir',
-                                description: 'Dark Sandalwood, Vetiver, Pepper',
-                                price: 'Rs. 4,600',
-                              ),
-                              HoverProductCard(
-                                image: 'images/peach.jpg',
-                                title: 'Peach Blossom',
-                                description: 'White Peach, Magnolia, Vanilla',
-                                price: 'Rs. 3,400',
-                              ),
-                            ],
+                            children: _getProductsForCategory(),
                           );
                         },
                       ),
