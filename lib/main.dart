@@ -26,7 +26,7 @@ final ValueNotifier<String> currencyNotifier = ValueNotifier('PKR');
 
 String formatPrice(int basePricePKR, String currency) {
   if (currency == 'USD') {
-    return '\${(basePricePKR * 0.0036).toStringAsFixed(2)}';
+    return '\$${(basePricePKR * 0.0036).toStringAsFixed(2)}';
   } else if (currency == 'EUR') {
     return '€${(basePricePKR * 0.0033).toStringAsFixed(2)}';
   }
