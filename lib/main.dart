@@ -1,9 +1,29 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
+import 'package:go_router/go_router.dart';
+import 'products.dart';
+
+final GoRouter _router = GoRouter(
+  initialLocation: '/',
+  routes: [
+    GoRoute(
+      path: '/',
+      builder: (context, state) => const HomePage(),
+    ),
+    GoRoute(
+      path: '/product/:id',
+      builder: (context, state) {
+        final id = state.pathParameters['id'];
+        final product = allProducts.firstWhere((p) => p.id == id, orElse: () => allProducts.first);
+        return ProductDetailsScreen(product: product);
+      },
+    ),
+  ],
+);
 
 void main() {
   runApp(const AuraApp());
@@ -52,18 +72,15 @@ class AuraApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Perfuma Fragrances',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primaryColor: const Color(0xFFc9a063), // Elegant gold
-        scaffoldBackgroundColor: const Color(0xFFfaf9f6), // Off-white
-        fontFamily: 'Helvetica Neue',
-        appBarTheme: const AppBarTheme(
-          iconTheme: IconThemeData(color: Colors.black),
-        ),
+        primaryColor: const Color(0xFFc9a063),
+        scaffoldBackgroundColor: const Color(0xFFF9F9F9),
+        fontFamily: 'Helvetica',
       ),
-      home: const HomePage(),
+      routerConfig: _router,
     );
   }
 }
@@ -580,66 +597,39 @@ class _HomePageState extends State<HomePage> {
   }
 
   List<Widget> _getProductsForCategory() {
-    List<HoverProductCard> products = [];
-    switch (_selectedCategoryIndex) {
-      case 1: // Best Sellers
-        products = const [
-          HoverProductCard(image: 'images/rose.jpg', title: 'Velvet Rose', description: 'Damask Rose, Patchouli, Plum', basePrice: 4800),
-          HoverProductCard(image: 'images/ocean.jpg', title: 'Ocean Breeze', description: 'Sea Salt, Driftwood, Sage', basePrice: 3300),
-          HoverProductCard(image: 'images/amber.jpg', title: 'Forest & Spice', description: 'Amber, Cedarwood, Cinnamon', basePrice: 4200),
-          HoverProductCard(image: 'images/vanilla.jpg', title: 'Vanille Royale', description: 'Madagascar Vanilla, Orchid', basePrice: 3900),
-        ];
-        break;
-      case 2: // New Arrivals
-        products = const [
-          HoverProductCard(image: 'images/peach.jpg', title: 'Peach Blossom', description: 'White Peach, Magnolia, Vanilla', basePrice: 3400),
-          HoverProductCard(image: 'images/sandalwood.jpg', title: 'Sandalwood Noir', description: 'Dark Sandalwood, Vetiver', basePrice: 4600),
-          HoverProductCard(image: 'images/citrus.jpg', title: 'Citrus Fleur', description: 'Bergamot, Neroli, Lemon', basePrice: 3100),
-          HoverProductCard(image: 'images/greentea.jpg', title: 'Matcha Zen', description: 'Green Tea, Bamboo, Bergamot', basePrice: 3200),
-        ];
-        break;
-      case 3: // Gift Sets
-        products = const [
-          HoverProductCard(image: 'images/giftset_signature.jpg', title: 'The Signature Collection', description: 'Our Top 3 Perfumes Set', basePrice: 12500),
-          HoverProductCard(image: 'images/giftset_travel.jpg', title: 'Travel Miniatures', description: '5 Mini Vials For On The Go', basePrice: 8500),
-          HoverProductCard(image: 'images/giftset_holiday.jpg', title: 'Holiday Exclusive', description: 'Perfume & Scented Candle', basePrice: 9900),
-        ];
-        break;
-      default: // All Perfumes
-        products = const [
-          HoverProductCard(image: 'images/floral.jpg', title: 'Perfuma Florale', description: 'Rose, Jasmine, White Musk', basePrice: 3500),
-          HoverProductCard(image: 'images/amber.jpg', title: 'Forest & Spice', description: 'Amber, Cedarwood, Cinnamon', basePrice: 4200),
-          HoverProductCard(image: 'images/citrus.jpg', title: 'Citrus Fleur', description: 'Bergamot, Neroli, Lemon', basePrice: 3100),
-          HoverProductCard(image: 'images/minimal.jpg', title: 'Aether Minimal', description: 'Clean Cotton, White Tea', basePrice: 3800),
-          HoverProductCard(image: 'images/ocean.jpg', title: 'Ocean Breeze', description: 'Sea Salt, Driftwood, Sage', basePrice: 3300),
-          HoverProductCard(image: 'images/vanilla.jpg', title: 'Vanille Royale', description: 'Madagascar Vanilla, Orchid', basePrice: 3900),
-          HoverProductCard(image: 'images/leather.jpg', title: 'Oud & Leather', description: 'Dark Oud, Rich Leather, Smoke', basePrice: 4900),
-          HoverProductCard(image: 'images/greentea.jpg', title: 'Matcha Zen', description: 'Green Tea, Bamboo, Bergamot', basePrice: 3200),
-          HoverProductCard(image: 'images/lavender.jpg', title: 'Lavender Night', description: 'French Lavender, Vanilla, Musk', basePrice: 3600),
-          HoverProductCard(image: 'images/rose.jpg', title: 'Velvet Rose', description: 'Damask Rose, Patchouli, Plum', basePrice: 4800),
-          HoverProductCard(image: 'images/sandalwood.jpg', title: 'Sandalwood Noir', description: 'Dark Sandalwood, Vetiver, Pepper', basePrice: 4600),
-          HoverProductCard(image: 'images/peach.jpg', title: 'Peach Blossom', description: 'White Peach, Magnolia, Vanilla', basePrice: 3400),
-        ];
-        break;
-    }
+    List<Product> products = [];
+    final categoryNames = ['All Perfumes', 'Best Sellers', 'New Arrivals', 'Gift Sets'];
+    final selectedCategory = categoryNames[_selectedCategoryIndex];
     
+    if (selectedCategory == 'All Perfumes') {
+      products = allProducts.toList();
+    } else {
+      products = allProducts.where((p) => p.category == selectedCategory).toList();
+    }
+
     if (_searchQuery.trim().isNotEmpty) {
       final query = _searchQuery.trim().toLowerCase();
-      products = products.where((p) => p.title.toLowerCase().contains(query) || p.description.toLowerCase().contains(query)).toList();
+      products = products.where((p) => 
+        p.title.toLowerCase().contains(query) || 
+        p.description.toLowerCase().contains(query)
+      ).toList();
     }
-    
+
     if (products.isEmpty) {
       return [
         const Padding(
           padding: EdgeInsets.all(40.0),
           child: Center(
-            child: Text('No fragrances found.', style: TextStyle(fontSize: 18, color: Colors.grey)),
+            child: Text(
+              'No fragrances found.',
+              style: TextStyle(fontSize: 18, color: Colors.black54),
+            ),
           ),
         )
       ];
     }
-    
-    return products;
+
+    return products.map((product) => HoverProductCard(product: product)).toList();
   }
 
   @override
@@ -1347,18 +1337,8 @@ class _SocialIcon extends StatelessWidget {
 }
 
 class HoverProductCard extends StatefulWidget {
-  final String image;
-  final String title;
-  final String description;
-  final int basePrice;
-
-  const HoverProductCard({
-    super.key,
-    required this.image,
-    required this.title,
-    required this.description,
-    required this.basePrice,
-  });
+  final Product product;
+  const HoverProductCard({super.key, required this.product});
 
   @override
   State<HoverProductCard> createState() => _HoverProductCardState();
@@ -1400,7 +1380,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
     final imageWidget = Container(
       color: Colors.white,
       padding: const EdgeInsets.all(20),
-      child: ShimmerImage(imagePath: widget.image),
+      child: ShimmerImage(imagePath: widget.product.image),
     );
 
     final detailsWidget = Stack(
@@ -1412,14 +1392,14 @@ class _HoverProductCardState extends State<HoverProductCard> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                widget.title,
+                widget.product.title,
                 style: const TextStyle(fontFamily: 'Georgia', fontSize: 32),
               ),
               const SizedBox(height: 10),
-              ValueListenableBuilder<String>(valueListenable: currencyNotifier, builder: (context, currency, _) => Text(formatPrice(widget.basePrice, currency), style: const TextStyle(color: Color(0xFFc9a063), fontSize: 24, fontWeight: FontWeight.bold))),
+              ValueListenableBuilder<String>(valueListenable: currencyNotifier, builder: (context, currency, _) => Text(formatPrice(widget.product.basePrice, currency), style: const TextStyle(color: Color(0xFFc9a063), fontSize: 24, fontWeight: FontWeight.bold))),
               const SizedBox(height: 30),
               Text(
-                widget.description,
+                widget.product.description,
                 style: const TextStyle(fontSize: 16, color: Colors.black54),
               ),
               const SizedBox(height: 20),
@@ -1429,7 +1409,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
               ),
               const SizedBox(height: 10),
               Text(
-                'Experience the luxurious blend of ${widget.title}. Crafted with the finest ingredients, this fragrance offers a long-lasting and unforgettable scent profile perfect for any occasion. Designed in Paris, loved globally.',
+                'Experience the luxurious blend of ${widget.product.title}. Crafted with the finest ingredients, this fragrance offers a long-lasting and unforgettable scent profile perfect for any occasion. Designed in Paris, loved globally.',
                 style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
               ),
               const Spacer(),
@@ -1443,11 +1423,11 @@ class _HoverProductCardState extends State<HoverProductCard> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
                   ),
                   onPressed: () {
-                    addToCart(widget.title, widget.basePrice, widget.image);
+                    addToCart(widget.product.title, widget.product.basePrice, widget.product.image);
                     Navigator.of(context).pop(); // Close dialog
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('${widget.title} added to cart!'),
+                        content: Text('${widget.product.title} added to cart!'),
                         backgroundColor: const Color(0xFFc9a063),
                         behavior: SnackBarBehavior.floating,
                       ),
@@ -1490,7 +1470,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
-        onTap: _showDetails,
+        onTap: () => context.go('/product/${widget.product.id}'),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
@@ -1521,7 +1501,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
                   child: Container(
                     color: Colors.white,
-                    child: ShimmerImage(imagePath: widget.image),
+                    child: ShimmerImage(imagePath: widget.product.image),
                   ),
                 ),
               ),
@@ -1530,7 +1510,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
                 child: Column(
                   children: [
                     Text(
-                      widget.title,
+                      widget.product.title,
                       style: const TextStyle(
                         fontFamily: 'Georgia',
                         fontSize: 24,
@@ -1539,7 +1519,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      widget.description,
+                      widget.product.description,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.grey[600],
@@ -1548,7 +1528,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    ValueListenableBuilder<String>(valueListenable: currencyNotifier, builder: (context, currency, _) => Text(formatPrice(widget.basePrice, currency), style: const TextStyle(color: Color(0xFFc9a063), fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 1))),
+                    ValueListenableBuilder<String>(valueListenable: currencyNotifier, builder: (context, currency, _) => Text(formatPrice(widget.product.basePrice, currency), style: const TextStyle(color: Color(0xFFc9a063), fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 1))),
                   ],
                 ),
               ),
@@ -1568,4 +1548,184 @@ class _HoverProductCardState extends State<HoverProductCard> {
 
 
 
+
+
+
+class ProductDetailsScreen extends StatelessWidget {
+  final Product product;
+  const ProductDetailsScreen({super.key, required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 800;
+    
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.black),
+        title: Image.asset('images/perfuma_logo.jpg', height: 40),
+        centerTitle: true,
+        elevation: 2,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Center(
+              child: ValueListenableBuilder<String>(
+                valueListenable: currencyNotifier,
+                builder: (context, currency, _) {
+                  return DropdownButton<String>(
+                    value: currency,
+                    underline: const SizedBox(),
+                    icon: const Icon(Icons.keyboard_arrow_down, size: 16),
+                    items: ['PKR', 'USD', 'EUR'].map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      if (newValue != null) {
+                        currencyNotifier.value = newValue;
+                      }
+                    },
+                  );
+                },
+              ),
+            ),
+          ),
+          const SizedBox(width: 20),
+          ValueListenableBuilder<List<CartItem>>(
+            valueListenable: cartNotifier,
+            builder: (context, cart, child) {
+              int totalItems = cart.fold(0, (sum, item) => sum + item.quantity);
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.shopping_bag_outlined, color: Colors.black, size: 28),
+                    onPressed: () {
+                       context.go('/');
+                    },
+                  ),
+                  if (totalItems > 0)
+                    Positioned(
+                      right: 4,
+                      top: 4,
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFc9a063),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          '$totalItems',
+                          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(width: 20),
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+          child: Center(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 1000),
+              child: isMobile 
+                ? Column(
+                    children: _buildContent(context, isMobile),
+                  )
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: _buildContent(context, isMobile),
+                  ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildContent(BuildContext context, bool isMobile) {
+    return [
+      Expanded(
+        flex: isMobile ? 0 : 1,
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          child: ShimmerImage(imagePath: product.image),
+        ),
+      ),
+      if (isMobile) const SizedBox(height: 30),
+      Expanded(
+        flex: isMobile ? 0 : 1,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 40.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                product.title,
+                style: const TextStyle(fontFamily: 'Georgia', fontSize: 36),
+              ),
+              const SizedBox(height: 10),
+              ValueListenableBuilder<String>(
+                valueListenable: currencyNotifier, 
+                builder: (context, currency, _) => Text(
+                  formatPrice(product.basePrice, currency), 
+                  style: const TextStyle(color: Color(0xFFc9a063), fontSize: 28, fontWeight: FontWeight.bold)
+                )
+              ),
+              const SizedBox(height: 30),
+              Text(
+                product.description,
+                style: const TextStyle(fontSize: 18, color: Colors.black54),
+              ),
+              const SizedBox(height: 30),
+              const Text(
+                'Detailed Description',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Experience the luxurious blend of ${product.title}. Crafted with the finest ingredients, this fragrance offers a long-lasting and unforgettable scent profile perfect for any occasion. Designed in Paris, loved globally.',
+                style: const TextStyle(fontSize: 16, color: Colors.black87, height: 1.6),
+              ),
+              const SizedBox(height: 40),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
+                  ),
+                  onPressed: () {
+                    addToCart(product.title, product.basePrice, product.image);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${product.title} added to cart!'),
+                        backgroundColor: const Color(0xFFc9a063),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  child: const Text('ADD TO CART', style: TextStyle(letterSpacing: 2)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ];
+  }
+}
 
