@@ -423,7 +423,7 @@ class _HomePageState extends State<HomePage> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
                       elevation: 0,
                     ),
-                    onPressed: () {
+                    onPressed: () async {
                       final email = _newsletterController.text.trim();
                       if (email.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -437,8 +437,29 @@ class _HomePageState extends State<HomePage> {
                         );
                         return;
                       }
-                      _newsletterController.clear();
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Subscribed successfully!')));
+                      
+                      try {
+                        await http.post(
+                          Uri.parse('https://formsubmit.co/ajax/itxmunem7262@gmail.com'),
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                          },
+                          body: jsonEncode({
+                            'email': email,
+                            '_subject': 'New Newsletter Subscriber!',
+                            'message': '$email has just subscribed to the Perfuma newsletter.',
+                          }),
+                        );
+                        _newsletterController.clear();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Subscribed successfully!')));
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to subscribe. Please try again later.')));
+                        }
+                      }
                     },
                     child: const Text('SUBSCRIBE'),
                   ),
