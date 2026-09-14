@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
@@ -13,22 +14,32 @@ void main() {
 // -----------------------------------------------------------------------------
 class CartItem {
   final String title;
-  final String price;
+  final int basePrice;
   final String image;
   int quantity;
 
-  CartItem({required this.title, required this.price, required this.image, this.quantity = 1});
+  CartItem({required this.title, required this.basePrice, required this.image, this.quantity = 1});
 }
 
 final ValueNotifier<List<CartItem>> cartNotifier = ValueNotifier([]);
+final ValueNotifier<String> currencyNotifier = ValueNotifier('PKR');
 
-void addToCart(String title, String price, String image) {
+String formatPrice(int basePricePKR, String currency) {
+  if (currency == 'USD') {
+    return '\${(basePricePKR * 0.0036).toStringAsFixed(2)}';
+  } else if (currency == 'EUR') {
+    return '€${(basePricePKR * 0.0033).toStringAsFixed(2)}';
+  }
+  return 'Rs. ${basePricePKR.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}';
+}
+
+void addToCart(String title, int basePrice, String image) {
   final cart = List<CartItem>.from(cartNotifier.value);
   int index = cart.indexWhere((item) => item.title == title);
   if (index >= 0) {
     cart[index].quantity++;
   } else {
-    cart.add(CartItem(title: title, price: price, image: image));
+    cart.add(CartItem(title: title, basePrice: basePrice, image: image));
   }
   cartNotifier.value = cart;
 }
@@ -72,6 +83,7 @@ class _HomePageState extends State<HomePage> {
   Timer? _timer;
   int _currentPage = 0;
   int _selectedCategoryIndex = 0;
+  String _searchQuery = '';
 
   final List<String> _heroImages = [
     'images/hero.jpg',
@@ -532,43 +544,66 @@ class _HomePageState extends State<HomePage> {
   }
 
   List<Widget> _getProductsForCategory() {
+    List<HoverProductCard> products = [];
     switch (_selectedCategoryIndex) {
       case 1: // Best Sellers
-        return const [
-          HoverProductCard(image: 'images/rose.jpg', title: 'Velvet Rose', description: 'Damask Rose, Patchouli, Plum', price: 'Rs. 4,800'),
-          HoverProductCard(image: 'images/ocean.jpg', title: 'Ocean Breeze', description: 'Sea Salt, Driftwood, Sage', price: 'Rs. 3,300'),
-          HoverProductCard(image: 'images/amber.jpg', title: 'Forest & Spice', description: 'Amber, Cedarwood, Cinnamon', price: 'Rs. 4,200'),
-          HoverProductCard(image: 'images/vanilla.jpg', title: 'Vanille Royale', description: 'Madagascar Vanilla, Orchid', price: 'Rs. 3,900'),
+        products = const [
+          HoverProductCard(image: 'images/rose.jpg', title: 'Velvet Rose', description: 'Damask Rose, Patchouli, Plum', basePrice: 4800),
+          HoverProductCard(image: 'images/ocean.jpg', title: 'Ocean Breeze', description: 'Sea Salt, Driftwood, Sage', basePrice: 3300),
+          HoverProductCard(image: 'images/amber.jpg', title: 'Forest & Spice', description: 'Amber, Cedarwood, Cinnamon', basePrice: 4200),
+          HoverProductCard(image: 'images/vanilla.jpg', title: 'Vanille Royale', description: 'Madagascar Vanilla, Orchid', basePrice: 3900),
         ];
+        break;
       case 2: // New Arrivals
-        return const [
-          HoverProductCard(image: 'images/peach.jpg', title: 'Peach Blossom', description: 'White Peach, Magnolia, Vanilla', price: 'Rs. 3,400'),
-          HoverProductCard(image: 'images/sandalwood.jpg', title: 'Sandalwood Noir', description: 'Dark Sandalwood, Vetiver', price: 'Rs. 4,600'),
-          HoverProductCard(image: 'images/citrus.jpg', title: 'Citrus Fleur', description: 'Bergamot, Neroli, Lemon', price: 'Rs. 3,100'),
-          HoverProductCard(image: 'images/greentea.jpg', title: 'Matcha Zen', description: 'Green Tea, Bamboo, Bergamot', price: 'Rs. 3,200'),
+        products = const [
+          HoverProductCard(image: 'images/peach.jpg', title: 'Peach Blossom', description: 'White Peach, Magnolia, Vanilla', basePrice: 3400),
+          HoverProductCard(image: 'images/sandalwood.jpg', title: 'Sandalwood Noir', description: 'Dark Sandalwood, Vetiver', basePrice: 4600),
+          HoverProductCard(image: 'images/citrus.jpg', title: 'Citrus Fleur', description: 'Bergamot, Neroli, Lemon', basePrice: 3100),
+          HoverProductCard(image: 'images/greentea.jpg', title: 'Matcha Zen', description: 'Green Tea, Bamboo, Bergamot', basePrice: 3200),
         ];
+        break;
       case 3: // Gift Sets
-        return const [
-          HoverProductCard(image: 'images/giftset_signature.jpg', title: 'The Signature Collection', description: 'Our Top 3 Perfumes Set', price: 'Rs. 12,500'),
-          HoverProductCard(image: 'images/giftset_travel.jpg', title: 'Travel Miniatures', description: '5 Mini Vials For On The Go', price: 'Rs. 8,500'),
-          HoverProductCard(image: 'images/giftset_holiday.jpg', title: 'Holiday Exclusive', description: 'Perfume & Scented Candle', price: 'Rs. 9,900'),
+        products = const [
+          HoverProductCard(image: 'images/giftset_signature.jpg', title: 'The Signature Collection', description: 'Our Top 3 Perfumes Set', basePrice: 12500),
+          HoverProductCard(image: 'images/giftset_travel.jpg', title: 'Travel Miniatures', description: '5 Mini Vials For On The Go', basePrice: 8500),
+          HoverProductCard(image: 'images/giftset_holiday.jpg', title: 'Holiday Exclusive', description: 'Perfume & Scented Candle', basePrice: 9900),
         ];
+        break;
       default: // All Perfumes
-        return const [
-          HoverProductCard(image: 'images/floral.jpg', title: 'Perfuma Florale', description: 'Rose, Jasmine, White Musk', price: 'Rs. 3,500'),
-          HoverProductCard(image: 'images/amber.jpg', title: 'Forest & Spice', description: 'Amber, Cedarwood, Cinnamon', price: 'Rs. 4,200'),
-          HoverProductCard(image: 'images/citrus.jpg', title: 'Citrus Fleur', description: 'Bergamot, Neroli, Lemon', price: 'Rs. 3,100'),
-          HoverProductCard(image: 'images/minimal.jpg', title: 'Aether Minimal', description: 'Clean Cotton, White Tea', price: 'Rs. 3,800'),
-          HoverProductCard(image: 'images/ocean.jpg', title: 'Ocean Breeze', description: 'Sea Salt, Driftwood, Sage', price: 'Rs. 3,300'),
-          HoverProductCard(image: 'images/vanilla.jpg', title: 'Vanille Royale', description: 'Madagascar Vanilla, Orchid', price: 'Rs. 3,900'),
-          HoverProductCard(image: 'images/leather.jpg', title: 'Oud & Leather', description: 'Dark Oud, Rich Leather, Smoke', price: 'Rs. 4,900'),
-          HoverProductCard(image: 'images/greentea.jpg', title: 'Matcha Zen', description: 'Green Tea, Bamboo, Bergamot', price: 'Rs. 3,200'),
-          HoverProductCard(image: 'images/lavender.jpg', title: 'Lavender Night', description: 'French Lavender, Vanilla, Musk', price: 'Rs. 3,600'),
-          HoverProductCard(image: 'images/rose.jpg', title: 'Velvet Rose', description: 'Damask Rose, Patchouli, Plum', price: 'Rs. 4,800'),
-          HoverProductCard(image: 'images/sandalwood.jpg', title: 'Sandalwood Noir', description: 'Dark Sandalwood, Vetiver, Pepper', price: 'Rs. 4,600'),
-          HoverProductCard(image: 'images/peach.jpg', title: 'Peach Blossom', description: 'White Peach, Magnolia, Vanilla', price: 'Rs. 3,400'),
+        products = const [
+          HoverProductCard(image: 'images/floral.jpg', title: 'Perfuma Florale', description: 'Rose, Jasmine, White Musk', basePrice: 3500),
+          HoverProductCard(image: 'images/amber.jpg', title: 'Forest & Spice', description: 'Amber, Cedarwood, Cinnamon', basePrice: 4200),
+          HoverProductCard(image: 'images/citrus.jpg', title: 'Citrus Fleur', description: 'Bergamot, Neroli, Lemon', basePrice: 3100),
+          HoverProductCard(image: 'images/minimal.jpg', title: 'Aether Minimal', description: 'Clean Cotton, White Tea', basePrice: 3800),
+          HoverProductCard(image: 'images/ocean.jpg', title: 'Ocean Breeze', description: 'Sea Salt, Driftwood, Sage', basePrice: 3300),
+          HoverProductCard(image: 'images/vanilla.jpg', title: 'Vanille Royale', description: 'Madagascar Vanilla, Orchid', basePrice: 3900),
+          HoverProductCard(image: 'images/leather.jpg', title: 'Oud & Leather', description: 'Dark Oud, Rich Leather, Smoke', basePrice: 4900),
+          HoverProductCard(image: 'images/greentea.jpg', title: 'Matcha Zen', description: 'Green Tea, Bamboo, Bergamot', basePrice: 3200),
+          HoverProductCard(image: 'images/lavender.jpg', title: 'Lavender Night', description: 'French Lavender, Vanilla, Musk', basePrice: 3600),
+          HoverProductCard(image: 'images/rose.jpg', title: 'Velvet Rose', description: 'Damask Rose, Patchouli, Plum', basePrice: 4800),
+          HoverProductCard(image: 'images/sandalwood.jpg', title: 'Sandalwood Noir', description: 'Dark Sandalwood, Vetiver, Pepper', basePrice: 4600),
+          HoverProductCard(image: 'images/peach.jpg', title: 'Peach Blossom', description: 'White Peach, Magnolia, Vanilla', basePrice: 3400),
         ];
+        break;
     }
+    
+    if (_searchQuery.trim().isNotEmpty) {
+      final query = _searchQuery.trim().toLowerCase();
+      products = products.where((p) => p.title.toLowerCase().contains(query) || p.description.toLowerCase().contains(query)).toList();
+    }
+    
+    if (products.isEmpty) {
+      return [
+        const Padding(
+          padding: EdgeInsets.all(40.0),
+          child: Center(
+            child: Text('No fragrances found.', style: TextStyle(fontSize: 18, color: Colors.grey)),
+          ),
+        )
+      ];
+    }
+    
+    return products;
   }
 
   @override
@@ -980,6 +1015,29 @@ class MobileNavDrawer extends StatelessWidget {
 }
 
 
+class ShimmerImage extends StatelessWidget {
+  final String imagePath;
+  const ShimmerImage({super.key, required this.imagePath});
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      imagePath,
+      fit: BoxFit.contain,
+      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+        if (wasSynchronouslyLoaded) return child;
+        return frame == null
+            ? Shimmer.fromColors(
+                baseColor: Colors.grey[200]!,
+                highlightColor: Colors.white,
+                child: Container(color: Colors.white, width: double.infinity, height: double.infinity),
+              )
+            : child;
+      },
+    );
+  }
+}
+
 // -----------------------------------------------------------------------------
 // CART DRAWER
 // -----------------------------------------------------------------------------
@@ -1040,7 +1098,7 @@ class CartDrawer extends StatelessWidget {
                                   height: 80,
                                   padding: const EdgeInsets.all(8),
                                   color: const Color(0xFFfaf9f6),
-                                  child: Image.asset(item.image, fit: BoxFit.contain),
+                                  child: ShimmerImage(imagePath: item.image),
                                 ),
                                 const SizedBox(width: 24),
                                 Expanded(
@@ -1231,14 +1289,14 @@ class HoverProductCard extends StatefulWidget {
   final String image;
   final String title;
   final String description;
-  final String price;
+  final int basePrice;
 
   const HoverProductCard({
     super.key,
     required this.image,
     required this.title,
     required this.description,
-    required this.price,
+    required this.basePrice,
   });
 
   @override
@@ -1281,7 +1339,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
     final imageWidget = Container(
       color: Colors.white,
       padding: const EdgeInsets.all(20),
-      child: Image.asset(widget.image, fit: BoxFit.contain),
+      child: ShimmerImage(imagePath: widget.image),
     );
 
     final detailsWidget = Stack(
@@ -1331,7 +1389,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
                   ),
                   onPressed: () {
-                    addToCart(widget.title, widget.price, widget.image);
+                    addToCart(widget.title, widget.basePrice, widget.image);
                     Navigator.of(context).pop(); // Close dialog
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -1409,10 +1467,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
                   child: Container(
                     color: Colors.white,
-                    child: Image.asset(
-                      widget.image,
-                      fit: BoxFit.contain,
-                    ),
+                    child: ShimmerImage(imagePath: widget.image),
                   ),
                 ),
               ),
@@ -1458,3 +1513,8 @@ class _HoverProductCardState extends State<HoverProductCard> {
     );
   }
 }
+
+
+
+
+
