@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
@@ -7,6 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'package:go_router/go_router.dart';
 import 'products.dart';
+import 'auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 final GoRouter _router = GoRouter(
   initialLocation: '/',
@@ -719,7 +721,56 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: 8),
+              // Login / Account Button
+              StreamBuilder<User?>(
+                stream: FirebaseAuth.instance.authStateChanges(),
+                builder: (context, snapshot) {
+                  final user = snapshot.data;
+                  if (user != null) {
+                    return PopupMenuButton<String>(
+                      tooltip: user.email ?? 'Account',
+                      icon: const CircleAvatar(
+                        radius: 16,
+                        backgroundColor: Color(0xFFc9a063),
+                        child: Icon(Icons.person, color: Colors.white, size: 18),
+                      ),
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          enabled: false,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Signed in as', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                              Text(user.email ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuDivider(),
+                        const PopupMenuItem(value: 'logout', child: Row(children: [
+                          Icon(Icons.logout, size: 18),
+                          SizedBox(width: 10),
+                          Text('Logout'),
+                        ])),
+                      ],
+                      onSelected: (value) async {
+                        if (value == 'logout') await FirebaseAuth.instance.signOut();
+                      },
+                    );
+                  }
+                  return OutlinedButton.icon(
+                    onPressed: () => showDialog(context: context, builder: (c) => const AuthDialog()),
+                    icon: const Icon(Icons.person_outline, size: 18, color: Colors.black),
+                    label: const Text('Login', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.black, width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 16),
               // Cart Icon with Badge
               ValueListenableBuilder<List<CartItem>>(
                 valueListenable: cartNotifier,
