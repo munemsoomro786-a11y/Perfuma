@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_config.dart';
 import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
@@ -30,16 +31,7 @@ final GoRouter _router = GoRouter(
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: const FirebaseOptions(
-      apiKey: "AIzaSyCA82rTtmNIXRcRDr59Fa9-8EzwwU4hT0c",
-      authDomain: "perfuma-78a7d.firebaseapp.com",
-      projectId: "perfuma-78a7d",
-      storageBucket: "perfuma-78a7d.firebasestorage.app",
-      messagingSenderId: "339029386098",
-      appId: "1:339029386098:web:80e9936536e8648115b3eb",
-    ),
-  );
+  await Firebase.initializeApp(options: FirebaseConfig.options);
   runApp(const AuraApp());
 }
 
