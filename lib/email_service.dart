@@ -22,24 +22,20 @@ class EmailService {
 
       final orderItemsList = items.map((i) {
         final price = i['basePrice'] ?? 0;
-        String rawNumeric;
+        String formattedPrice;
         if (currency == 'USD') {
-          rawNumeric = (price * 0.0036).toStringAsFixed(2);
+          formattedPrice = '\$${(price * 0.0036).toStringAsFixed(2)}';
         } else if (currency == 'EUR') {
-          rawNumeric = (price * 0.0033).toStringAsFixed(2);
+          formattedPrice = '€${(price * 0.0033).toStringAsFixed(2)}';
         } else {
-          rawNumeric = '$price';
+          formattedPrice = 'Rs. ${price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}';
         }
         return {
           'name': i['title'] ?? '',
           'units': i['quantity'] ?? 1,
-          'price': rawNumeric,
-          'image': 'https://perfuma-fragrances.vercel.app/${i['image'] ?? 'images/floral_hero.jpg'}',
+          'price': formattedPrice,
         };
       }).toList();
-
-      // Clean numeric total without duplicate symbol if template adds $
-      String cleanTotal = totalAmount.replaceAll(RegExp(r'[^\d.,]'), '').trim();
 
       final body = {
         'service_id': _serviceId,
@@ -53,7 +49,7 @@ class EmailService {
           'cost': {
             'shipping': '0.00 (FREE)',
             'tax': '0.00',
-            'total': cleanTotal.isNotEmpty ? cleanTotal : totalAmount,
+            'total': totalAmount,
           },
           'customer_name': customerName,
           'phone': phone,
@@ -81,7 +77,7 @@ class EmailService {
           'cost': {
             'shipping': '0.00 (FREE)',
             'tax': '0.00',
-            'total': cleanTotal.isNotEmpty ? cleanTotal : totalAmount,
+            'total': totalAmount,
           },
           'customer_name': 'ADMIN - Order for $customerName ($phone)',
           'phone': phone,
