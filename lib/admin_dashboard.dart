@@ -397,35 +397,62 @@ class _AdminProductsTabState extends State<_AdminProductsTab> {
     );
   }
 
-  void _editPriceDialog(String docId, String title, int currentPrice) {
-    final priceController = TextEditingController(text: currentPrice.toString());
+  void _editProductDialog(Product p, {String? currentTitle, String? currentDesc, int? currentPrice, String? currentImage, String? currentCategory}) {
+    final titleController = TextEditingController(text: currentTitle ?? p.title);
+    final descController = TextEditingController(text: currentDesc ?? p.description);
+    final priceController = TextEditingController(text: (currentPrice ?? p.basePrice).toString());
+    final imageController = TextEditingController(text: currentImage ?? p.image);
+    final categoryController = TextEditingController(text: currentCategory ?? p.category);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Edit Price: $title', style: const TextStyle(fontFamily: 'Georgia', fontSize: 18)),
-        content: TextField(
-          controller: priceController,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: 'New Price (PKR)', border: OutlineInputBorder()),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+        title: Text('Edit Perfume: ${p.title}', style: const TextStyle(fontFamily: 'Georgia', fontSize: 18, fontWeight: FontWeight.bold)),
+        content: SizedBox(
+          width: 460,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: titleController, decoration: const InputDecoration(labelText: 'Perfume Name', border: OutlineInputBorder())),
+                const SizedBox(height: 12),
+                TextField(controller: descController, decoration: const InputDecoration(labelText: 'Fragrance Notes / Description', border: OutlineInputBorder()), maxLines: 2),
+                const SizedBox(height: 12),
+                TextField(controller: priceController, decoration: const InputDecoration(labelText: 'Price in PKR', border: OutlineInputBorder()), keyboardType: TextInputType.number),
+                const SizedBox(height: 12),
+                TextField(controller: imageController, decoration: const InputDecoration(labelText: 'Image Asset or Web URL', border: OutlineInputBorder())),
+                const SizedBox(height: 12),
+                TextField(controller: categoryController, decoration: const InputDecoration(labelText: 'Category (Best Sellers, New Arrivals, etc.)', border: OutlineInputBorder())),
+              ],
+            ),
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
-              final newPrice = int.tryParse(priceController.text.trim());
-              if (newPrice != null) {
-                await FirebaseFirestore.instance.collection('products').doc(docId).set({'basePrice': newPrice}, SetOptions(merge: true));
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text('Price updated successfully!'),
-                    backgroundColor: Color(0xFFc9a063),
-                  ));
-                }
+              final newPrice = int.tryParse(priceController.text.trim()) ?? p.basePrice;
+              await FirebaseFirestore.instance.collection('products').doc(p.id).set({
+                'id': p.id,
+                'title': titleController.text.trim(),
+                'description': descController.text.trim(),
+                'basePrice': newPrice,
+                'image': imageController.text.trim(),
+                'category': categoryController.text.trim(),
+                'updatedAt': FieldValue.serverTimestamp(),
+              }, SetOptions(merge: true));
+
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('Perfume updated successfully in live database!'),
+                  backgroundColor: Color(0xFFc9a063),
+                ));
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white),
-            child: const Text('UPDATE'),
+            child: const Text('SAVE CHANGES'),
           ),
         ],
       ),
@@ -460,12 +487,9 @@ class _AdminProductsTabState extends State<_AdminProductsTab> {
             stream: FirebaseFirestore.instance.collection('products').snapshots(),
             builder: (context, snapshot) {
               final firestoreDocs = snapshot.data?.docs ?? [];
-              final Map<String, int> dynamicPrices = {};
+              final Map<String, Map<String, dynamic>> dynamicProducts = {};
               for (final doc in firestoreDocs) {
-                final d = doc.data() as Map<String, dynamic>;
-                if (d['basePrice'] != null) {
-                  dynamicPrices[doc.id] = (d['basePrice'] as num).toInt();
-                }
+                dynamicProducts[doc.id] = doc.data() as Map<String, dynamic>;
               }
 
               return ListView.separated(
@@ -474,26 +498,38 @@ class _AdminProductsTabState extends State<_AdminProductsTab> {
                 separatorBuilder: (_, __) => const Divider(height: 1),
                 itemBuilder: (context, index) {
                   final p = allProducts[index];
-                  final price = dynamicPrices[p.id] ?? p.basePrice;
+                  final dynamicData = dynamicProducts[p.id];
+                  final title = dynamicData?['title'] as String? ?? p.title;
+                  final desc = dynamicData?['description'] as String? ?? p.description;
+                  final price = (dynamicData?['basePrice'] as num?)?.toInt() ?? p.basePrice;
+                  final image = dynamicData?['image'] as String? ?? p.image;
+                  final category = dynamicData?['category'] as String? ?? p.category;
 
                   return ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     leading: ClipRRect(
                       borderRadius: BorderRadius.circular(4),
-                      child: Image.asset(p.image, width: 50, height: 50, fit: BoxFit.cover,
+                      child: Image.asset(image, width: 50, height: 50, fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Container(width: 50, height: 50, color: Colors.grey.shade200)),
                     ),
-                    title: Text(p.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                    subtitle: Text(p.description, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    subtitle: Text(desc, maxLines: 1, overflow: TextOverflow.ellipsis),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text('Rs. $price', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFFc9a063))),
                         const SizedBox(width: 8),
                         IconButton(
-                          icon: const Icon(Icons.edit, size: 18, color: Colors.black54),
-                          tooltip: 'Edit Price',
-                          onPressed: () => _editPriceDialog(p.id, p.title, price),
+                          icon: const Icon(Icons.edit, size: 20, color: Color(0xFFc9a063)),
+                          tooltip: 'Edit Perfume Details',
+                          onPressed: () => _editProductDialog(
+                            p,
+                            currentTitle: title,
+                            currentDesc: desc,
+                            currentPrice: price,
+                            currentImage: image,
+                            currentCategory: category,
+                          ),
                         ),
                       ],
                     ),
