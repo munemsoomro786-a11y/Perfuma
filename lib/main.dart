@@ -12,6 +12,7 @@ import 'auth.dart';
 import 'firestore_service.dart';
 import 'checkout.dart';
 import 'orders.dart';
+import 'admin_dashboard.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 final GoRouter _router = GoRouter(
@@ -32,6 +33,10 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/checkout',
       builder: (context, state) => const CheckoutScreen(),
+    ),
+    GoRoute(
+      path: '/admin',
+      builder: (context, state) => const AdminDashboardScreen(),
     ),
   ],
 );
@@ -826,6 +831,15 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
                           const PopupMenuDivider(),
+                          if (user.email == kAdminEmail)
+                            const PopupMenuItem(
+                              value: 'admin',
+                              child: Row(children: [
+                                Icon(Icons.admin_panel_settings, size: 18, color: Color(0xFFc9a063)),
+                                SizedBox(width: 10),
+                                Text('Admin Panel', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFc9a063))),
+                              ]),
+                            ),
                           const PopupMenuItem(value: 'orders', child: Row(children: [
                             Icon(Icons.receipt_long, size: 18),
                             SizedBox(width: 10),
@@ -842,6 +856,8 @@ class _HomePageState extends State<HomePage> {
                           await FirebaseAuth.instance.signOut();
                         } else if (value == 'orders') {
                           showDialog(context: context, builder: (c) => const OrderHistoryScreen());
+                        } else if (value == 'admin') {
+                          GoRouter.of(context).push('/admin');
                         }
                       },
                     );
