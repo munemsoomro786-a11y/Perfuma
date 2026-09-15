@@ -341,7 +341,7 @@ class _HomePageState extends State<HomePage> {
                               
                               try {
                                 final response = await http.post(
-                                  Uri.parse('https://formsubmit.co/ajax/itxmunem7262@gmail.com'),
+                                  Uri.parse('https://formsubmit.co/ajax/munemsoomro786@gmail.com'),
                                   headers: {
                                     'Content-Type': 'application/json',
                                     'Accept': 'application/json',
@@ -547,7 +547,7 @@ class _HomePageState extends State<HomePage> {
                       
                       try {
                         await http.post(
-                          Uri.parse('https://formsubmit.co/ajax/itxmunem7262@gmail.com'),
+                          Uri.parse('https://formsubmit.co/ajax/munemsoomro786@gmail.com'),
                           headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
