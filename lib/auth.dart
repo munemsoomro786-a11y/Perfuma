@@ -300,8 +300,13 @@ class _AuthDialogState extends State<AuthDialog> with SingleTickerProviderStateM
                               _isLogin ? "Don't have an account? " : 'Already have an account? ',
                               style: const TextStyle(color: Colors.black54, fontSize: 13),
                             ),
-                            GestureDetector(
-                              onTap: _toggleMode,
+                            TextButton(
+                              onPressed: _toggleMode,
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(0, 0),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
                               child: Text(
                                 _isLogin ? 'Sign Up' : 'Login',
                                 style: const TextStyle(
