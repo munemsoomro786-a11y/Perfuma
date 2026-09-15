@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'main.dart';
 import 'auth.dart';
 import 'firestore_service.dart';
+import 'email_service.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -73,6 +74,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       await db.collection('orders').doc(orderId).set(orderData);
       // Save to user's orders subcollection
       await db.collection('users').doc(user.uid).collection('orders').doc(orderId).set(orderData);
+
+      // Send Order Confirmation Email via EmailJS
+      EmailService.sendOrderConfirmation(
+        orderId: orderId.substring(0, 8).toUpperCase(),
+        customerName: _nameController.text.trim(),
+        customerEmail: user.email ?? '',
+        phone: _phoneController.text.trim(),
+        address: _addressController.text.trim(),
+        city: _cityController.text.trim(),
+        totalAmount: 'Rs. $totalPKR',
+        items: List<Map<String, dynamic>>.from(orderData['items'] as List),
+      );
 
       // Clear cart
       cartNotifier.value = [];
