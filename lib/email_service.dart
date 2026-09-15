@@ -14,16 +14,26 @@ class EmailService {
     required String address,
     required String city,
     required String totalAmount,
+    required String currency,
     required List<Map<String, dynamic>> items,
   }) async {
     try {
       final url = Uri.parse('https://api.emailjs.com/api/v1.0/email/send');
 
       final orderItemsList = items.map((i) {
+        final price = i['basePrice'] ?? 0;
+        String formattedPrice;
+        if (currency == 'USD') {
+          formattedPrice = '\$${(price * 0.0036).toStringAsFixed(2)}';
+        } else if (currency == 'EUR') {
+          formattedPrice = '€${(price * 0.0033).toStringAsFixed(2)}';
+        } else {
+          formattedPrice = 'Rs. $price';
+        }
         return {
           'name': i['title'] ?? '',
           'units': i['quantity'] ?? 1,
-          'price': '${i['basePrice'] ?? 0}',
+          'price': formattedPrice,
         };
       }).toList();
 

@@ -75,7 +75,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       // Save to user's orders subcollection
       await db.collection('users').doc(user.uid).collection('orders').doc(orderId).set(orderData);
 
-      // Send Order Confirmation Email via EmailJS
+      // Send Order Confirmation Email via EmailJS with selected currency
+      final currentCurrency = currencyNotifier.value;
       EmailService.sendOrderConfirmation(
         orderId: orderId.substring(0, 8).toUpperCase(),
         customerName: _nameController.text.trim(),
@@ -83,7 +84,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         phone: _phoneController.text.trim(),
         address: _addressController.text.trim(),
         city: _cityController.text.trim(),
-        totalAmount: 'Rs. $totalPKR',
+        totalAmount: formatPrice(totalPKR, currentCurrency),
+        currency: currentCurrency,
         items: List<Map<String, dynamic>>.from(orderData['items'] as List),
       );
 
