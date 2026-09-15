@@ -1526,7 +1526,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
-        onTap: () => context.push('/product/${widget.product.id}'),
+        onTap: () => GoRouter.of(context).push('/product/${widget.product.id}'),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
