@@ -23,7 +23,7 @@ class EmailService {
         return {
           'name': i['title'] ?? '',
           'units': i['quantity'] ?? 1,
-          'price': 'Rs. ${i['basePrice'] ?? 0}',
+          'price': '${i['basePrice'] ?? 0}',
         };
       }).toList();
 
@@ -46,15 +46,40 @@ class EmailService {
         },
       };
 
-      final response = await http.post(
+      // 1. Send Customer Confirmation
+      await http.post(
         url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode(body),
       );
 
-      return response.statusCode == 200;
+      // 2. Send Admin Alert Email
+      final adminBody = {
+        'service_id': _serviceId,
+        'template_id': _templateId,
+        'user_id': _publicKey,
+        'template_params': {
+          'email': 'munemsoomro786@gmail.com',
+          'order_id': '$orderId [ADMIN ALERT: New Order from $customerName]',
+          'orders': orderItemsList,
+          'cost': {
+            'shipping': '0.00 (FREE)',
+            'tax': '0.00',
+            'total': totalAmount,
+          },
+          'customer_name': 'ADMIN - Order for $customerName ($phone)',
+          'phone': phone,
+          'address': '$address, $city',
+        },
+      };
+
+      await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(adminBody),
+      );
+
+      return true;
     } catch (e) {
       return false;
     }
