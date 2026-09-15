@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthDialog extends StatefulWidget {
   const AuthDialog({super.key});
@@ -53,17 +52,13 @@ class _AuthDialogState extends State<AuthDialog> with SingleTickerProviderStateM
   Future<void> _signInWithGoogle() async {
     setState(() { _isGoogleLoading = true; _errorMessage = null; });
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) { setState(() { _isGoogleLoading = false; }); return; }
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+      await FirebaseAuth.instance.signInWithPopup(googleProvider);
       if (mounted) Navigator.of(context).pop();
     } on FirebaseAuthException catch (e) {
-      setState(() { _errorMessage = e.message ?? 'Google sign-in failed.'; });
+      setState(() { _errorMessage = e.message ?? 'Google sign-in failed. Try again.'; });
+    } catch (e) {
+      setState(() { _errorMessage = 'Google sign-in failed. Try again.'; });
     } finally {
       if (mounted) setState(() { _isGoogleLoading = false; });
     }

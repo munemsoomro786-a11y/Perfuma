@@ -87,7 +87,6 @@ class AuraApp extends StatelessWidget {
         fontFamily: 'Helvetica',
       ),
       routerConfig: _router,
-      builder: (context, child) => SelectionArea(child: child!),
     );
   }
 }
