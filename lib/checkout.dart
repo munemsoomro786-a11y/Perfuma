@@ -89,19 +89,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         items: List<Map<String, dynamic>>.from(orderData['items'] as List),
       );
 
-      // Clear cart
-      cartNotifier.value = [];
-      await FirestoreService.clearCart();
-
       if (!mounted) return;
 
-      // Show success dialog
+      // 1. Show success dialog FIRST while cart screen is still intact
       await showDialog(
         context: context,
         barrierDismissible: false,
         builder: (c) => _OrderSuccessDialog(orderId: orderId.substring(0, 8).toUpperCase()),
       );
 
+      // 2. Clear cart AFTER user closes the success dialog
+      cartNotifier.value = [];
+      await FirestoreService.clearCart();
+
+      // 3. Navigate back to Home Page
       if (mounted) GoRouter.of(context).go('/');
     } catch (e) {
       if (mounted) {
