@@ -22,20 +22,24 @@ class EmailService {
 
       final orderItemsList = items.map((i) {
         final price = i['basePrice'] ?? 0;
-        String formattedPrice;
+        String rawNumeric;
         if (currency == 'USD') {
-          formattedPrice = '\$${(price * 0.0036).toStringAsFixed(2)}';
+          rawNumeric = (price * 0.0036).toStringAsFixed(2);
         } else if (currency == 'EUR') {
-          formattedPrice = '€${(price * 0.0033).toStringAsFixed(2)}';
+          rawNumeric = (price * 0.0033).toStringAsFixed(2);
         } else {
-          formattedPrice = 'Rs. $price';
+          rawNumeric = '$price';
         }
         return {
           'name': i['title'] ?? '',
           'units': i['quantity'] ?? 1,
-          'price': formattedPrice,
+          'price': rawNumeric,
+          'image': 'https://perfuma-fragrances.vercel.app/${i['image'] ?? 'images/floral_hero.jpg'}',
         };
       }).toList();
+
+      // Clean numeric total without duplicate symbol if template adds $
+      String cleanTotal = totalAmount.replaceAll(RegExp(r'[^\d.,]'), '').trim();
 
       final body = {
         'service_id': _serviceId,
@@ -45,10 +49,11 @@ class EmailService {
           'email': customerEmail,
           'order_id': orderId,
           'orders': orderItemsList,
+          'logo': 'https://perfuma-fragrances.vercel.app/og-image.jpg',
           'cost': {
             'shipping': '0.00 (FREE)',
             'tax': '0.00',
-            'total': totalAmount,
+            'total': cleanTotal.isNotEmpty ? cleanTotal : totalAmount,
           },
           'customer_name': customerName,
           'phone': phone,
@@ -72,10 +77,11 @@ class EmailService {
           'email': 'munemsoomro786@gmail.com',
           'order_id': '$orderId [ADMIN ALERT: New Order from $customerName]',
           'orders': orderItemsList,
+          'logo': 'https://perfuma-fragrances.vercel.app/og-image.jpg',
           'cost': {
             'shipping': '0.00 (FREE)',
             'tax': '0.00',
-            'total': totalAmount,
+            'total': cleanTotal.isNotEmpty ? cleanTotal : totalAmount,
           },
           'customer_name': 'ADMIN - Order for $customerName ($phone)',
           'phone': phone,
