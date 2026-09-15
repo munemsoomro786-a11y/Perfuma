@@ -754,6 +754,47 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(width: 8),
+              // ❤️ Wishlist Icon in AppBar
+              ValueListenableBuilder<Set<String>>(
+                valueListenable: wishlistNotifier,
+                builder: (context, wishlist, _) {
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      IconButton(
+                        tooltip: 'My Wishlist',
+                        icon: Icon(
+                          wishlist.isNotEmpty ? Icons.favorite : Icons.favorite_border,
+                          color: wishlist.isNotEmpty ? const Color(0xFFc9a063) : Colors.black,
+                          size: 26,
+                        ),
+                        onPressed: () {
+                          if (FirebaseAuth.instance.currentUser == null) {
+                            showDialog(context: context, builder: (c) => const AuthDialog());
+                          } else {
+                            _scaffoldKey.currentState?.openEndDrawer();
+                            // Show wishlist panel
+                            showDialog(
+                              context: context,
+                              builder: (c) => _WishlistDialog(),
+                            );
+                          }
+                        },
+                      ),
+                      if (wishlist.isNotEmpty)
+                        Positioned(
+                          right: 6,
+                          top: 6,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(color: Color(0xFFc9a063), shape: BoxShape.circle),
+                            child: Text('${wishlist.length}', style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
               // Login / Account Button
               StreamBuilder<User?>(
                 stream: FirebaseAuth.instance.authStateChanges(),
@@ -1630,13 +1671,21 @@ class _HoverProductCardState extends State<HoverProductCard> {
                       showDialog(context: context, builder: (c) => const AuthDialog());
                       return;
                     }
-                    await FirestoreService.toggleWishlist({
+                    // ⚡ Instant UI update (optimistic)
+                    final updated = Set<String>.from(wishlistNotifier.value);
+                    if (updated.contains(widget.product.id)) {
+                      updated.remove(widget.product.id);
+                    } else {
+                      updated.add(widget.product.id);
+                    }
+                    wishlistNotifier.value = updated;
+                    // Sync Firestore in background
+                    FirestoreService.toggleWishlist({
                       'id': widget.product.id,
                       'title': widget.product.title,
                       'basePrice': widget.product.basePrice,
                       'image': widget.product.image,
                     });
-                    wishlistNotifier.value = await FirestoreService.loadWishlist();
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
@@ -1644,7 +1693,7 @@ class _HoverProductCardState extends State<HoverProductCard> {
                     decoration: BoxDecoration(
                       color: isWishlisted ? const Color(0xFFc9a063) : Colors.white,
                       shape: BoxShape.circle,
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 8)],
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 8)],
                     ),
                     child: Icon(
                       isWishlisted ? Icons.favorite : Icons.favorite_border,
@@ -1672,6 +1721,122 @@ class _HoverProductCardState extends State<HoverProductCard> {
 
 
 
+
+// ─── WISHLIST DIALOG ─────────────────────────────────────────────────────────
+class _WishlistDialog extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+      child: Container(
+        width: 500,
+        constraints: const BoxConstraints(maxHeight: 600),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 16, 0),
+              child: Row(
+                children: [
+                  const Icon(Icons.favorite, color: Color(0xFFc9a063), size: 22),
+                  const SizedBox(width: 10),
+                  const Text('My Wishlist', style: TextStyle(fontFamily: 'Georgia', fontSize: 20, fontWeight: FontWeight.bold)),
+                  const Spacer(),
+                  IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+                ],
+              ),
+            ),
+            const Divider(),
+            // Wishlist Items
+            Flexible(
+              child: ValueListenableBuilder<Set<String>>(
+                valueListenable: wishlistNotifier,
+                builder: (context, wishlistIds, _) {
+                  final items = allProducts.where((p) => wishlistIds.contains(p.id)).toList();
+                  if (items.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.all(40),
+                      child: Column(
+                        children: [
+                          Icon(Icons.favorite_border, size: 60, color: Colors.black12),
+                          SizedBox(height: 16),
+                          Text('No saved perfumes yet', style: TextStyle(color: Colors.black38, fontSize: 16)),
+                          SizedBox(height: 8),
+                          Text('Tap ❤️ on any perfume to save it', style: TextStyle(color: Colors.black26, fontSize: 13)),
+                        ],
+                      ),
+                    );
+                  }
+                  return ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: items.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final p = items[index];
+                      return ValueListenableBuilder<String>(
+                        valueListenable: currencyNotifier,
+                        builder: (context, currency, _) {
+                          return ListTile(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                            leading: ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: Image.asset(p.image, width: 60, height: 60, fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(width: 60, height: 60, color: Colors.grey.shade100)),
+                            ),
+                            title: Text(p.title, style: const TextStyle(fontFamily: 'Georgia', fontSize: 15, fontWeight: FontWeight.bold)),
+                            subtitle: Text(formatPrice(p.basePrice, currency), style: const TextStyle(color: Color(0xFFc9a063), fontWeight: FontWeight.bold)),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Add to cart
+                                ElevatedButton(
+                                  onPressed: () {
+                                    addToCart(p.title, p.basePrice, p.image);
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                      content: Text('${p.title} added to cart!'),
+                                      backgroundColor: const Color(0xFFc9a063),
+                                      behavior: SnackBarBehavior.floating,
+                                    ));
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.black,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
+                                  ),
+                                  child: const Text('Add', style: TextStyle(fontSize: 12)),
+                                ),
+                                const SizedBox(width: 8),
+                                // Remove from wishlist
+                                IconButton(
+                                  icon: const Icon(Icons.favorite, color: Color(0xFFc9a063), size: 22),
+                                  onPressed: () async {
+                                    final updated = Set<String>.from(wishlistNotifier.value);
+                                    updated.remove(p.id);
+                                    wishlistNotifier.value = updated;
+                                    FirestoreService.toggleWishlist({'id': p.id, 'title': p.title, 'basePrice': p.basePrice, 'image': p.image});
+                                  },
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class ProductDetailsScreen extends StatelessWidget {
   final Product product;
