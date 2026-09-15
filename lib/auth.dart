@@ -143,7 +143,8 @@ class _AuthDialogState extends State<AuthDialog> with SingleTickerProviderStateM
                 padding: const EdgeInsets.all(28),
                 child: FadeTransition(
                   opacity: _fadeAnimation,
-                  child: Form(
+                  child: SingleChildScrollView(
+                    child: Form(
                     key: _formKey,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -314,10 +315,12 @@ class _AuthDialogState extends State<AuthDialog> with SingleTickerProviderStateM
                             ),
                           ],
                         ),
+                        const SizedBox(height: 8),
                       ],
                     ),
                   ),
                 ),
+              ),
               ),
             ),
           ],
