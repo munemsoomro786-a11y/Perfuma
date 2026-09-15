@@ -10,6 +10,8 @@ import 'package:go_router/go_router.dart';
 import 'products.dart';
 import 'auth.dart';
 import 'firestore_service.dart';
+import 'checkout.dart';
+import 'orders.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 final GoRouter _router = GoRouter(
@@ -26,6 +28,10 @@ final GoRouter _router = GoRouter(
         final product = allProducts.firstWhere((p) => p.id == id, orElse: () => allProducts.first);
         return ProductDetailsScreen(product: product);
       },
+    ),
+    GoRoute(
+      path: '/checkout',
+      builder: (context, state) => const CheckoutScreen(),
     ),
   ],
 );
@@ -819,15 +825,24 @@ class _HomePageState extends State<HomePage> {
                             ],
                           ),
                         ),
-                        const PopupMenuDivider(),
-                        const PopupMenuItem(value: 'logout', child: Row(children: [
-                          Icon(Icons.logout, size: 18),
-                          SizedBox(width: 10),
-                          Text('Logout'),
+                          const PopupMenuDivider(),
+                          const PopupMenuItem(value: 'orders', child: Row(children: [
+                            Icon(Icons.receipt_long, size: 18),
+                            SizedBox(width: 10),
+                            Text('My Orders'),
+                          ])),
+                          const PopupMenuItem(value: 'logout', child: Row(children: [
+                            Icon(Icons.logout, size: 18),
+                            SizedBox(width: 10),
+                            Text('Logout'),
                         ])),
                       ],
                       onSelected: (value) async {
-                        if (value == 'logout') await FirebaseAuth.instance.signOut();
+                        if (value == 'logout') {
+                          await FirebaseAuth.instance.signOut();
+                        } else if (value == 'orders') {
+                          showDialog(context: context, builder: (c) => const OrderHistoryScreen());
+                        }
                       },
                     );
                   }
@@ -1384,13 +1399,8 @@ class CartDrawer extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(vertical: 24),
                               ),
                               onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Proceeding to secure checkout...'),
-                                    backgroundColor: Color(0xFFc9a063),
-                                  )
-                                );
                                 Navigator.pop(context);
+                                GoRouter.of(context).push('/checkout');
                               },
                               child: const Text('SECURE CHECKOUT', style: TextStyle(letterSpacing: 2, fontWeight: FontWeight.bold)),
                             ),
