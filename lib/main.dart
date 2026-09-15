@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:go_router/go_router.dart';
 import 'products.dart';
 import 'auth.dart';
+import 'firestore_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 final GoRouter _router = GoRouter(
@@ -32,6 +33,7 @@ final GoRouter _router = GoRouter(
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: FirebaseConfig.options);
+  _initFirebaseSync();
   runApp(const AuraApp());
 }
 
@@ -49,6 +51,45 @@ class CartItem {
 
 final ValueNotifier<List<CartItem>> cartNotifier = ValueNotifier([]);
 final ValueNotifier<String> currencyNotifier = ValueNotifier('PKR');
+final ValueNotifier<Set<String>> wishlistNotifier = ValueNotifier({});
+
+// Sync cart & wishlist from Firestore when auth state changes
+void _initFirebaseSync() {
+  FirebaseAuth.instance.authStateChanges().listen((user) async {
+    if (user != null) {
+      // Load cart from Firestore
+      final savedCart = await FirestoreService.loadCart();
+      if (savedCart.isNotEmpty) {
+        cartNotifier.value = savedCart
+            .map((m) => CartItem(
+                  title: m['title'] ?? '',
+                  basePrice: m['basePrice'] ?? 0,
+                  image: m['image'] ?? '',
+                  quantity: m['quantity'] ?? 1,
+                ))
+            .toList();
+      }
+      // Load wishlist
+      wishlistNotifier.value = await FirestoreService.loadWishlist();
+    } else {
+      wishlistNotifier.value = {};
+    }
+  });
+
+  // Save cart to Firestore whenever it changes
+  cartNotifier.addListener(() async {
+    if (FirebaseAuth.instance.currentUser != null) {
+      await FirestoreService.saveCart(cartNotifier.value
+          .map((i) => {
+                'title': i.title,
+                'basePrice': i.basePrice,
+                'image': i.image,
+                'quantity': i.quantity,
+              })
+          .toList());
+    }
+  });
+}
 
 String formatPrice(int basePricePKR, String currency) {
   if (currency == 'USD') {
@@ -1520,77 +1561,103 @@ class _HoverProductCardState extends State<HoverProductCard> {
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTap: () => GoRouter.of(context).push('/product/${widget.product.id}'),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-          transform: Matrix4.identity()..translate(0.0, _isHovered ? -10.0 : 0.0),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(2),
-            boxShadow: [
-              if (_isHovered)
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                )
-              else
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
-                  child: Container(
-                    color: Colors.white,
-                    child: ShimmerImage(imagePath: widget.product.image),
+    return Stack(
+      children: [
+        MouseRegion(
+          cursor: SystemMouseCursors.click,
+          onEnter: (_) => setState(() => _isHovered = true),
+          onExit: (_) => setState(() => _isHovered = false),
+          child: GestureDetector(
+            onTap: () => GoRouter.of(context).push('/product/${widget.product.id}'),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+              transform: Matrix4.identity()..translate(0.0, _isHovered ? -10.0 : 0.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(2),
+                boxShadow: [
+                  if (_isHovered)
+                    BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10))
+                  else
+                    BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5)),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
+                      child: Container(color: Colors.white, child: ShimmerImage(imagePath: widget.product.image)),
+                    ),
                   ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  children: [
-                    Text(
-                      widget.product.title,
-                      style: const TextStyle(
-                        fontFamily: 'Georgia',
-                        fontSize: 24,
-                        color: Colors.black87,
-                      ),
+                  Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      children: [
+                        Text(widget.product.title, style: const TextStyle(fontFamily: 'Georgia', fontSize: 24, color: Colors.black87)),
+                        const SizedBox(height: 12),
+                        Text(widget.product.description, textAlign: TextAlign.center, style: TextStyle(color: Colors.grey[600], fontSize: 15, letterSpacing: 1)),
+                        const SizedBox(height: 20),
+                        ValueListenableBuilder<String>(
+                          valueListenable: currencyNotifier,
+                          builder: (context, currency, _) => Text(formatPrice(widget.product.basePrice, currency), style: const TextStyle(color: Color(0xFFc9a063), fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      widget.product.description,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 15,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    ValueListenableBuilder<String>(valueListenable: currencyNotifier, builder: (context, currency, _) => Text(formatPrice(widget.product.basePrice, currency), style: const TextStyle(color: Color(0xFFc9a063), fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 1))),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
-      ),
+        // ❤️ Wishlist Heart Button
+        Positioned(
+          top: 12,
+          right: 12,
+          child: ValueListenableBuilder<Set<String>>(
+            valueListenable: wishlistNotifier,
+            builder: (context, wishlist, _) {
+              final isWishlisted = wishlist.contains(widget.product.id);
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(30),
+                  onTap: () async {
+                    final user = FirebaseAuth.instance.currentUser;
+                    if (user == null) {
+                      showDialog(context: context, builder: (c) => const AuthDialog());
+                      return;
+                    }
+                    await FirestoreService.toggleWishlist({
+                      'id': widget.product.id,
+                      'title': widget.product.title,
+                      'basePrice': widget.product.basePrice,
+                      'image': widget.product.image,
+                    });
+                    wishlistNotifier.value = await FirestoreService.loadWishlist();
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isWishlisted ? const Color(0xFFc9a063) : Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 8)],
+                    ),
+                    child: Icon(
+                      isWishlisted ? Icons.favorite : Icons.favorite_border,
+                      color: isWishlisted ? Colors.white : Colors.black54,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
