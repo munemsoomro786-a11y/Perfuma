@@ -1864,9 +1864,16 @@ class _WishlistDialog extends StatelessWidget {
   }
 }
 
-class ProductDetailsScreen extends StatelessWidget {
+class ProductDetailsScreen extends StatefulWidget {
   final Product product;
   const ProductDetailsScreen({super.key, required this.product});
+
+  @override
+  State<ProductDetailsScreen> createState() => _ProductDetailsScreenState();
+}
+
+class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
@@ -1874,7 +1881,9 @@ class ProductDetailsScreen extends StatelessWidget {
     final isMobile = screenWidth < 800;
     
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: Colors.white,
+      endDrawer: const CartDrawer(),
       appBar: AppBar(
         backgroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -1888,21 +1897,23 @@ class ProductDetailsScreen extends StatelessWidget {
               child: ValueListenableBuilder<String>(
                 valueListenable: currencyNotifier,
                 builder: (context, currency, _) {
-                  return DropdownButton<String>(
-                    value: currency,
-                    underline: const SizedBox(),
-                    icon: const Icon(Icons.keyboard_arrow_down, size: 16),
-                    items: ['PKR', 'USD', 'EUR'].map((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      );
-                    }).toList(),
-                    onChanged: (String? newValue) {
-                      if (newValue != null) {
-                        currencyNotifier.value = newValue;
-                      }
-                    },
+                  return DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: currency,
+                      icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black, size: 18),
+                      style: const TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold),
+                      items: <String>['PKR', 'USD', 'EUR'].map((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          currencyNotifier.value = newValue;
+                        }
+                      },
+                    ),
                   );
                 },
               ),
@@ -1919,7 +1930,7 @@ class ProductDetailsScreen extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.shopping_bag_outlined, color: Colors.black, size: 28),
                     onPressed: () {
-                       context.go('/');
+                      _scaffoldKey.currentState?.openEndDrawer();
                     },
                   ),
                   if (totalItems > 0)
@@ -1972,7 +1983,7 @@ class ProductDetailsScreen extends StatelessWidget {
         flex: isMobile ? 0 : 1,
         child: Container(
           padding: const EdgeInsets.all(20),
-          child: ShimmerImage(imagePath: product.image),
+          child: ShimmerImage(imagePath: widget.product.image),
         ),
       ),
       if (isMobile) const SizedBox(height: 30),
@@ -1985,20 +1996,20 @@ class ProductDetailsScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                product.title,
+                widget.product.title,
                 style: const TextStyle(fontFamily: 'Georgia', fontSize: 36),
               ),
               const SizedBox(height: 10),
               ValueListenableBuilder<String>(
                 valueListenable: currencyNotifier, 
                 builder: (context, currency, _) => Text(
-                  formatPrice(product.basePrice, currency), 
+                  formatPrice(widget.product.basePrice, currency), 
                   style: const TextStyle(color: Color(0xFFc9a063), fontSize: 28, fontWeight: FontWeight.bold)
                 )
               ),
               const SizedBox(height: 30),
               Text(
-                product.description,
+                widget.product.description,
                 style: const TextStyle(fontSize: 18, color: Colors.black54),
               ),
               const SizedBox(height: 30),
@@ -2008,7 +2019,7 @@ class ProductDetailsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                'Experience the luxurious blend of ${product.title}. Crafted with the finest ingredients, this fragrance offers a long-lasting and unforgettable scent profile perfect for any occasion. Designed in Paris, loved globally.',
+                'Experience the luxurious blend of ${widget.product.title}. Crafted with the finest ingredients, this fragrance offers a long-lasting and unforgettable scent profile perfect for any occasion. Designed in Paris, loved globally.',
                 style: const TextStyle(fontSize: 16, color: Colors.black87, height: 1.6),
               ),
               const SizedBox(height: 40),
@@ -2022,10 +2033,10 @@ class ProductDetailsScreen extends StatelessWidget {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
                   ),
                   onPressed: () {
-                    addToCart(product.title, product.basePrice, product.image);
+                    addToCart(widget.product.title, widget.product.basePrice, widget.product.image);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('${product.title} added to cart!'),
+                        content: Text('${widget.product.title} added to cart!'),
                         backgroundColor: const Color(0xFFc9a063),
                         behavior: SnackBarBehavior.floating,
                       ),
