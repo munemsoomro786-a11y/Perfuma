@@ -40,15 +40,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       return;
     }
 
-    final cart = cartNotifier.value;
-    if (cart.isEmpty) return;
+    final selectedCart = cartNotifier.value.where((i) => i.isSelected).toList();
+    if (selectedCart.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No items selected for checkout.'),
+          backgroundColor: Colors.black87,
+        ),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
       final db = FirebaseFirestore.instance;
       final orderId = db.collection('orders').doc().id;
-      final totalPKR = cart.fold(0, (sum, item) => sum + item.basePrice * item.quantity);
+      final totalPKR = selectedCart.fold(0, (total, item) => total + item.basePrice * item.quantity);
 
       final orderData = {
         'id': orderId,
@@ -58,7 +66,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         'phone': _phoneController.text.trim(),
         'city': _cityController.text.trim(),
         'address': _addressController.text.trim(),
-        'items': cart.map((i) => {
+        'items': selectedCart.map((i) => {
           'title': i.title,
           'basePrice': i.basePrice,
           'image': i.image,
@@ -98,9 +106,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         builder: (c) => _OrderSuccessDialog(orderId: orderId.substring(0, 8).toUpperCase()),
       );
 
-      // 2. Clear cart AFTER user closes the success dialog
-      cartNotifier.value = [];
-      await FirestoreService.clearCart();
+      // 2. Remove ONLY purchased items from cart, keeping unselected items intact!
+      final remaining = cartNotifier.value.where((i) => !i.isSelected).toList();
+      cartNotifier.value = remaining;
+      await FirestoreService.saveCart(remaining.map((i) => {
+        'title': i.title,
+        'basePrice': i.basePrice,
+        'image': i.image,
+        'quantity': i.quantity,
+        'isSelected': i.isSelected,
+      }).toList());
 
       // 3. Navigate back to Home Page
       if (mounted) GoRouter.of(context).go('/');
@@ -149,40 +164,48 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ],
               ),
             )
-          : ValueListenableBuilder<List<CartItem>>(
-              valueListenable: cartNotifier,
-              builder: (context, cart, _) {
-                if (cart.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.shopping_bag_outlined, size: 60, color: Colors.black26),
-                        const SizedBox(height: 16),
-                        const Text('Your cart is empty', style: TextStyle(fontSize: 18, color: Colors.black54)),
-                        const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: () => GoRouter.of(context).go('/'),
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white),
-                          child: const Text('SHOP NOW'),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(horizontal: isMobile ? 20 : 80, vertical: 40),
-                  child: isMobile
-                      ? Column(children: [_buildForm(), const SizedBox(height: 32), _buildOrderSummary(cart)])
-                      : Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+          : ValueListenableBuilder<String>(
+              valueListenable: currencyNotifier,
+              builder: (context, currency, _) {
+                return ValueListenableBuilder<List<CartItem>>(
+                  valueListenable: cartNotifier,
+                  builder: (context, cart, _) {
+                    final selectedCart = cart.where((i) => i.isSelected).toList();
+                    if (selectedCart.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Expanded(flex: 3, child: _buildForm()),
-                            const SizedBox(width: 40),
-                            Expanded(flex: 2, child: _buildOrderSummary(cart)),
+                            const Icon(Icons.shopping_bag_outlined, size: 60, color: Colors.black26),
+                            const SizedBox(height: 16),
+                            const Text('No items selected for checkout', style: TextStyle(fontSize: 18, color: Colors.black54)),
+                            const SizedBox(height: 8),
+                            const Text('Please select items from your cart to proceed.', style: TextStyle(fontSize: 14, color: Colors.black38)),
+                            const SizedBox(height: 20),
+                            ElevatedButton(
+                              onPressed: () => GoRouter.of(context).go('/'),
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white),
+                              child: const Text('VIEW CART / SHOP'),
+                            ),
                           ],
                         ),
+                      );
+                    }
+
+                    return SingleChildScrollView(
+                      padding: EdgeInsets.symmetric(horizontal: isMobile ? 20 : 80, vertical: 40),
+                      child: isMobile
+                          ? Column(children: [_buildForm(), const SizedBox(height: 32), _buildOrderSummary(selectedCart, currency)])
+                          : Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(flex: 3, child: _buildForm()),
+                                const SizedBox(width: 40),
+                                Expanded(flex: 2, child: _buildOrderSummary(selectedCart, currency)),
+                              ],
+                            ),
+                    );
+                  },
                 );
               },
             ),
@@ -281,8 +304,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  Widget _buildOrderSummary(List<CartItem> cart) {
-    final totalPKR = cart.fold(0, (sum, item) => sum + item.basePrice * item.quantity);
+  Widget _buildOrderSummary(List<CartItem> cart, String currency) {
+    final totalPKR = cart.fold(0, (total, item) => total + item.basePrice * item.quantity);
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -294,7 +317,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Order Summary', style: TextStyle(fontFamily: 'Georgia', fontSize: 20, fontWeight: FontWeight.bold)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Order Summary', style: TextStyle(fontFamily: 'Georgia', fontSize: 20, fontWeight: FontWeight.bold)),
+              Text('(${cart.length} ${cart.length == 1 ? "item" : "items"})', style: const TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.w500)),
+            ],
+          ),
           const SizedBox(height: 16),
           ...cart.map((item) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -315,7 +344,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ],
                       ),
                     ),
-                    Text(formatPrice(item.basePrice * item.quantity, 'PKR'),
+                    Text(formatPrice(item.basePrice * item.quantity, currency),
                         style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFc9a063))),
                   ],
                 ),
@@ -333,7 +362,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('Total', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              Text(formatPrice(totalPKR, 'PKR'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFFc9a063))),
+              Text(formatPrice(totalPKR, currency), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFFc9a063))),
             ],
           ),
         ],

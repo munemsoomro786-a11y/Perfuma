@@ -56,8 +56,15 @@ class CartItem {
   final int basePrice;
   final String image;
   int quantity;
+  bool isSelected;
 
-  CartItem({required this.title, required this.basePrice, required this.image, this.quantity = 1});
+  CartItem({
+    required this.title,
+    required this.basePrice,
+    required this.image,
+    this.quantity = 1,
+    this.isSelected = true,
+  });
 }
 
 final ValueNotifier<List<CartItem>> cartNotifier = ValueNotifier([]);
@@ -77,6 +84,7 @@ void _initFirebaseSync() {
                   basePrice: m['basePrice'] ?? 0,
                   image: m['image'] ?? '',
                   quantity: m['quantity'] ?? 1,
+                  isSelected: m['isSelected'] ?? true,
                 ))
             .toList();
       }
@@ -96,6 +104,7 @@ void _initFirebaseSync() {
                 'basePrice': i.basePrice,
                 'image': i.image,
                 'quantity': i.quantity,
+                'isSelected': i.isSelected,
               })
           .toList());
     }
@@ -116,8 +125,9 @@ void addToCart(String title, int basePrice, String image) {
   int index = cart.indexWhere((item) => item.title == title);
   if (index >= 0) {
     cart[index].quantity++;
+    cart[index].isSelected = true;
   } else {
-    cart.add(CartItem(title: title, basePrice: basePrice, image: image));
+    cart.add(CartItem(title: title, basePrice: basePrice, image: image, isSelected: true));
   }
   cartNotifier.value = cart;
 }
@@ -1278,16 +1288,18 @@ class CartDrawer extends StatelessWidget {
           return ValueListenableBuilder<List<CartItem>>(
             valueListenable: cartNotifier,
             builder: (context, cart, child) {
+              final selectedItems = cart.where((item) => item.isSelected).toList();
               int total = 0;
-              for (var item in cart) {
+              for (var item in selectedItems) {
                 total += item.basePrice * item.quantity;
               }
+              final bool allSelected = cart.isNotEmpty && cart.every((i) => i.isSelected);
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Container(
-                    padding: const EdgeInsets.only(top: 60, left: 24, right: 24, bottom: 24),
+                    padding: const EdgeInsets.only(top: 60, left: 24, right: 24, bottom: 20),
                     color: const Color(0xFFfaf9f6),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1300,6 +1312,37 @@ class CartDrawer extends StatelessWidget {
                       ],
                     ),
                   ),
+                  if (cart.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFDFBF7),
+                        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+                      ),
+                      child: Row(
+                        children: [
+                          Checkbox(
+                            value: allSelected,
+                            activeColor: const Color(0xFFc9a063),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                            side: const BorderSide(color: Colors.black26, width: 1.5),
+                            onChanged: (bool? val) {
+                              final selectAll = val ?? false;
+                              final updated = cart.map((i) {
+                                i.isSelected = selectAll;
+                                return i;
+                              }).toList();
+                              cartNotifier.value = updated;
+                            },
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Select All (${selectedItems.length}/${cart.length} items)',
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.black87),
+                          ),
+                        ],
+                      ),
+                    ),
                   Expanded(
                     child: cart.isEmpty
                         ? const Center(
@@ -1310,20 +1353,32 @@ class CartDrawer extends StatelessWidget {
                             itemBuilder: (context, index) {
                               final item = cart[index];
                               return Container(
-                                padding: const EdgeInsets.all(24.0),
+                                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
                                 decoration: BoxDecoration(
                                   border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
                                 ),
                                 child: Row(
                                   children: [
+                                    Checkbox(
+                                      value: item.isSelected,
+                                      activeColor: const Color(0xFFc9a063),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                      side: const BorderSide(color: Colors.black26, width: 1.5),
+                                      onChanged: (bool? val) {
+                                        final list = List<CartItem>.from(cartNotifier.value);
+                                        list[index].isSelected = val ?? false;
+                                        cartNotifier.value = list;
+                                      },
+                                    ),
+                                    const SizedBox(width: 8),
                                     Container(
-                                      width: 80,
-                                      height: 80,
+                                      width: 75,
+                                      height: 75,
                                       padding: const EdgeInsets.all(8),
                                       color: const Color(0xFFfaf9f6),
                                       child: ShimmerImage(imagePath: item.image),
                                     ),
-                                    const SizedBox(width: 24),
+                                    const SizedBox(width: 16),
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1332,7 +1387,7 @@ class CartDrawer extends StatelessWidget {
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               Expanded(
-                                                child: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'Georgia')),
+                                                child: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, fontFamily: 'Georgia')),
                                               ),
                                               InkWell(
                                                 onTap: () {
@@ -1344,9 +1399,9 @@ class CartDrawer extends StatelessWidget {
                                               ),
                                             ],
                                           ),
-                                          const SizedBox(height: 8),
-                                          Text(formatPrice(item.basePrice, currency), style: const TextStyle(color: Color(0xFFc9a063), fontSize: 16)),
-                                          const SizedBox(height: 12),
+                                          const SizedBox(height: 6),
+                                          Text(formatPrice(item.basePrice, currency), style: const TextStyle(color: Color(0xFFc9a063), fontSize: 15, fontWeight: FontWeight.w600)),
+                                          const SizedBox(height: 10),
                                           Row(
                                             children: [
                                               Container(
@@ -1358,6 +1413,8 @@ class CartDrawer extends StatelessWidget {
                                                   children: [
                                                     IconButton(
                                                       icon: const Icon(Icons.remove, size: 16),
+                                                      padding: const EdgeInsets.all(4),
+                                                      constraints: const BoxConstraints(),
                                                       onPressed: () {
                                                         final list = List<CartItem>.from(cartNotifier.value);
                                                         if (list[index].quantity > 1) {
@@ -1368,9 +1425,14 @@ class CartDrawer extends StatelessWidget {
                                                         cartNotifier.value = list;
                                                       },
                                                     ),
-                                                    Text('${item.quantity}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                                    Padding(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                                                      child: Text('${item.quantity}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                                    ),
                                                     IconButton(
                                                       icon: const Icon(Icons.add, size: 16),
+                                                      padding: const EdgeInsets.all(4),
+                                                      constraints: const BoxConstraints(),
                                                       onPressed: () {
                                                         final list = List<CartItem>.from(cartNotifier.value);
                                                         list[index].quantity++;
@@ -1393,7 +1455,7 @@ class CartDrawer extends StatelessWidget {
                   ),
                   if (cart.isNotEmpty)
                     Container(
-                      padding: const EdgeInsets.all(32),
+                      padding: const EdgeInsets.all(28),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -5))],
@@ -1403,24 +1465,47 @@ class CartDrawer extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('SUBTOTAL', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1, color: Colors.grey)),
-                              Text(formatPrice(total, currency), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24)),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('SUBTOTAL', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1, color: Colors.grey)),
+                                  const SizedBox(height: 2),
+                                  Text('${selectedItems.length} of ${cart.length} items selected', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                                ],
+                              ),
+                              Text(formatPrice(total, currency), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
                             ],
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 20),
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.black,
+                                backgroundColor: selectedItems.isEmpty ? Colors.grey[400] : Colors.black,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 24),
+                                padding: const EdgeInsets.symmetric(vertical: 22),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                               ),
-                              onPressed: () {
-                                Navigator.pop(context);
-                                GoRouter.of(context).push('/checkout');
-                              },
-                              child: const Text('SECURE CHECKOUT', style: TextStyle(letterSpacing: 2, fontWeight: FontWeight.bold)),
+                              onPressed: selectedItems.isEmpty
+                                  ? () {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Please select at least one perfume to checkout.'),
+                                          backgroundColor: Colors.black87,
+                                          duration: Duration(seconds: 2),
+                                        ),
+                                      );
+                                    }
+                                  : () {
+                                      Navigator.pop(context);
+                                      GoRouter.of(context).push('/checkout');
+                                    },
+                              child: Text(
+                                selectedItems.isEmpty
+                                    ? 'SELECT ITEMS TO CHECKOUT'
+                                    : 'SECURE CHECKOUT (${selectedItems.length})',
+                                style: const TextStyle(letterSpacing: 2, fontWeight: FontWeight.bold),
+                              ),
                             ),
                           ),
                         ],
