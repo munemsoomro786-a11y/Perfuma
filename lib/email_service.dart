@@ -4,7 +4,37 @@ import 'package:http/http.dart' as http;
 class EmailService {
   static const String _serviceId = 'service_mkiv3w5';
   static const String _templateId = 'template_nfod5b5';
+  static const String _otpTemplateId = 'template_ra0nykg';
   static const String _publicKey = '28BJrj0iawIrDnBPv';
+
+  static Future<bool> sendOtpEmail({
+    required String recipientEmail,
+    required String otpCode,
+  }) async {
+    try {
+      final url = Uri.parse('https://api.emailjs.com/api/v1.0/email/send');
+      final body = {
+        'service_id': _serviceId,
+        'template_id': _otpTemplateId,
+        'user_id': _publicKey,
+        'template_params': {
+          'email': recipientEmail,
+          'passcode': otpCode,
+          'time': '15 minutes',
+        },
+      };
+
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
 
   static Future<bool> sendOrderConfirmation({
     required String orderId,
