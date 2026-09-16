@@ -1983,7 +1983,17 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         flex: isMobile ? 0 : 1,
         child: Container(
           padding: const EdgeInsets.all(20),
-          child: ShimmerImage(imagePath: widget.product.image),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: InteractiveViewer(
+              clipBehavior: Clip.none,
+              minScale: 1.0,
+              maxScale: 4.0,
+              panEnabled: true,
+              scaleEnabled: true,
+              child: ShimmerImage(imagePath: widget.product.image),
+            ),
+          ),
         ),
       ),
       if (isMobile) const SizedBox(height: 30),
