@@ -700,9 +700,10 @@ class _HomePageState extends State<HomePage> {
       key: _scaffoldKey,
       drawer: isMobile ? MobileNavDrawer(scrollToSection: _scrollToSection, screenHeight: screenHeight) : null,
       endDrawer: const CartDrawer(),
-      body: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
+      body: SelectionArea(
+        child: CustomScrollView(
+          controller: _scrollController,
+          slivers: [
           SliverAppBar(
             backgroundColor: Colors.white,
             pinned: true,
@@ -1152,6 +1153,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -1956,20 +1958,22 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           const SizedBox(width: 20),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-          child: Center(
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 1000),
-              child: isMobile 
-                ? Column(
-                    children: _buildContent(context, isMobile),
-                  )
-                : Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: _buildContent(context, isMobile),
-                  ),
+      body: SelectionArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+            child: Center(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 1000),
+                child: isMobile 
+                  ? Column(
+                      children: _buildContent(context, isMobile),
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: _buildContent(context, isMobile),
+                    ),
+              ),
             ),
           ),
         ),
