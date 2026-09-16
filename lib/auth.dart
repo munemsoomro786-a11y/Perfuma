@@ -74,28 +74,14 @@ class _AuthDialogState extends State<AuthDialog> with SingleTickerProviderStateM
     }
   }
 
-  // Step 1: Pre-authenticate and Send 6-digit OTP to user's real email
+  // Step 1: Generate and Send 6-digit OTP to user's real email FIRST
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() { _isLoading = true; _errorMessage = null; });
 
     final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
 
     try {
-      // Validate credentials first with Firebase without establishing persistent full session yet
-      if (_isLogin) {
-        // Test sign in
-        await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
-      } else {
-        // Test registration
-        final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email, password: password);
-        await cred.user?.updateDisplayName(_nameController.text.trim());
-      }
-
-      // Temporarily sign out until OTP is verified!
-      await FirebaseAuth.instance.signOut();
-
       // Generate secure 6-digit numeric OTP (e.g. 748192)
       final random = Random();
       final code = (100000 + random.nextInt(900000)).toString();
@@ -109,7 +95,7 @@ class _AuthDialogState extends State<AuthDialog> with SingleTickerProviderStateM
       );
 
       if (!sent) {
-        throw Exception('Could not send verification email. Please check your connection.');
+        throw Exception('Could not send verification email. Please check your internet connection.');
       }
 
       // Switch view to OTP input
@@ -119,19 +105,6 @@ class _AuthDialogState extends State<AuthDialog> with SingleTickerProviderStateM
       });
       _animController.forward(from: 0);
 
-    } on FirebaseAuthException catch (e) {
-      setState(() {
-        _isLoading = false;
-        switch (e.code) {
-          case 'user-not-found': _errorMessage = 'No account found with this email.'; break;
-          case 'wrong-password': _errorMessage = 'Incorrect password. Please try again.'; break;
-          case 'invalid-credential': _errorMessage = 'Incorrect email or password.'; break;
-          case 'email-already-in-use': _errorMessage = 'An account already exists with this email.'; break;
-          case 'weak-password': _errorMessage = 'Password must be at least 6 characters.'; break;
-          case 'invalid-email': _errorMessage = 'Please enter a valid email address.'; break;
-          default: _errorMessage = e.message ?? 'An error occurred. Please try again.';
-        }
-      });
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -140,7 +113,7 @@ class _AuthDialogState extends State<AuthDialog> with SingleTickerProviderStateM
     }
   }
 
-  // Step 2: Verify OTP and finalize login
+  // Step 2: Verify OTP and ONLY THEN execute Firebase login or signup
   Future<void> _verifyOtp() async {
     final entered = _otpController.text.trim();
     if (entered.length != 6) {
@@ -158,16 +131,39 @@ class _AuthDialogState extends State<AuthDialog> with SingleTickerProviderStateM
       return;
     }
 
-    // OTP Verified! Log user in for real
+    // OTP 100% Verified! Now securely establish Firebase session
     setState(() { _isLoading = true; _errorMessage = null; });
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+      if (_isLogin) {
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+      } else {
+        final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+        await cred.user?.updateDisplayName(_nameController.text.trim());
+      }
       if (mounted) Navigator.of(context).pop();
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        switch (e.code) {
+          case 'user-not-found': _errorMessage = 'No account found with this email.'; break;
+          case 'wrong-password': _errorMessage = 'Incorrect password. Please try again.'; break;
+          case 'invalid-credential': _errorMessage = 'Incorrect email or password.'; break;
+          case 'email-already-in-use': _errorMessage = 'An account already exists with this email.'; break;
+          case 'weak-password': _errorMessage = 'Password must be at least 6 characters.'; break;
+          case 'invalid-email': _errorMessage = 'Please enter a valid email address.'; break;
+          default: _errorMessage = e.message ?? 'An error occurred. Please try again.';
+        }
+      });
     } catch (e) {
-      setState(() => _errorMessage = 'Verification succeeded, but login failed: $e');
+      setState(() => _errorMessage = 'Authentication failed: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
