@@ -166,14 +166,14 @@ class _AdminOrdersTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('orders').orderBy('createdAt', descending: true).snapshots(),
+      stream: FirebaseFirestore.instance.collection('orders').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator(color: Color(0xFFc9a063)));
         }
 
-        final orders = snapshot.data?.docs ?? [];
-        if (orders.isEmpty) {
+        final rawDocs = snapshot.data?.docs ?? [];
+        if (rawDocs.isEmpty) {
           return const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -185,6 +185,19 @@ class _AdminOrdersTab extends StatelessWidget {
             ),
           );
         }
+
+        final List<QueryDocumentSnapshot> orders = List.from(rawDocs);
+        orders.sort((a, b) {
+          final dataA = a.data() as Map<String, dynamic>;
+          final dataB = b.data() as Map<String, dynamic>;
+          final dateA = dataA['createdAt'] != null && dataA['createdAt'] is Timestamp
+              ? (dataA['createdAt'] as Timestamp).toDate()
+              : DateTime.now();
+          final dateB = dataB['createdAt'] != null && dataB['createdAt'] is Timestamp
+              ? (dataB['createdAt'] as Timestamp).toDate()
+              : DateTime.now();
+          return dateB.compareTo(dateA);
+        });
 
         return ListView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
