@@ -17,6 +17,7 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _cityController = TextEditingController();
   final _addressController = TextEditingController();
@@ -25,6 +26,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _emailController.dispose();
     _phoneController.dispose();
     _cityController.dispose();
     _addressController.dispose();
@@ -35,10 +37,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      showDialog(context: context, builder: (c) => const AuthDialog());
-      return;
-    }
+    final userId = user?.uid ?? 'guest_${DateTime.now().millisecondsSinceEpoch}';
+    final customerEmail = user?.email ?? _emailController.text.trim();
 
     final selectedCart = cartNotifier.value.where((i) => i.isSelected).toList();
     if (selectedCart.isEmpty) {
@@ -60,8 +60,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
       final orderData = {
         'id': orderId,
-        'userId': user.uid,
-        'userEmail': user.email ?? '',
+        'userId': userId,
+        'userEmail': customerEmail,
         'name': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
         'city': _cityController.text.trim(),
@@ -78,24 +78,29 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         'createdAt': FieldValue.serverTimestamp(),
       };
 
-      // Save to global orders collection
+      // Save to global orders collection for Admin Panel & order processing
       await db.collection('orders').doc(orderId).set(orderData);
-      // Save to user's orders subcollection
-      await db.collection('users').doc(user.uid).collection('orders').doc(orderId).set(orderData);
 
-      // Send Order Confirmation Email via EmailJS with selected currency
-      final currentCurrency = currencyNotifier.value;
-      EmailService.sendOrderConfirmation(
-        orderId: orderId.substring(0, 8).toUpperCase(),
-        customerName: _nameController.text.trim(),
-        customerEmail: user.email ?? '',
-        phone: _phoneController.text.trim(),
-        address: _addressController.text.trim(),
-        city: _cityController.text.trim(),
-        totalAmount: formatPrice(totalPKR, currentCurrency),
-        currency: currentCurrency,
-        items: List<Map<String, dynamic>>.from(orderData['items'] as List),
-      );
+      // If user is logged in, also save to user's orders subcollection
+      if (user != null) {
+        await db.collection('users').doc(user.uid).collection('orders').doc(orderId).set(orderData);
+      }
+
+      // Send Order Confirmation Email via EmailJS if email is provided
+      if (customerEmail.isNotEmpty) {
+        final currentCurrency = currencyNotifier.value;
+        EmailService.sendOrderConfirmation(
+          orderId: orderId.substring(0, 8).toUpperCase(),
+          customerName: _nameController.text.trim(),
+          customerEmail: customerEmail,
+          phone: _phoneController.text.trim(),
+          address: _addressController.text.trim(),
+          city: _cityController.text.trim(),
+          totalAmount: formatPrice(totalPKR, currentCurrency),
+          currency: currentCurrency,
+          items: List<Map<String, dynamic>>.from(orderData['items'] as List),
+        );
+      }
 
       if (!mounted) return;
 
@@ -133,7 +138,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 800;
 
@@ -147,68 +151,51 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         centerTitle: true,
         bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Container(color: Colors.black12, height: 1)),
       ),
-      body: user == null
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.lock_outline, size: 60, color: Colors.black26),
-                  const SizedBox(height: 16),
-                  const Text('Please login to checkout', style: TextStyle(fontSize: 18, color: Colors.black54)),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () => showDialog(context: context, builder: (c) => const AuthDialog()),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white),
-                    child: const Text('LOGIN'),
+      body: ValueListenableBuilder<String>(
+        valueListenable: currencyNotifier,
+        builder: (context, currency, _) {
+          return ValueListenableBuilder<List<CartItem>>(
+            valueListenable: cartNotifier,
+            builder: (context, cart, _) {
+              final selectedCart = cart.where((i) => i.isSelected).toList();
+              if (selectedCart.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.shopping_bag_outlined, size: 60, color: Colors.black26),
+                      const SizedBox(height: 16),
+                      const Text('No items selected for checkout', style: TextStyle(fontSize: 18, color: Colors.black54)),
+                      const SizedBox(height: 8),
+                      const Text('Please select items from your cart to proceed.', style: TextStyle(fontSize: 14, color: Colors.black38)),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: () => GoRouter.of(context).go('/'),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white),
+                        child: const Text('VIEW CART / SHOP'),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            )
-          : ValueListenableBuilder<String>(
-              valueListenable: currencyNotifier,
-              builder: (context, currency, _) {
-                return ValueListenableBuilder<List<CartItem>>(
-                  valueListenable: cartNotifier,
-                  builder: (context, cart, _) {
-                    final selectedCart = cart.where((i) => i.isSelected).toList();
-                    if (selectedCart.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.shopping_bag_outlined, size: 60, color: Colors.black26),
-                            const SizedBox(height: 16),
-                            const Text('No items selected for checkout', style: TextStyle(fontSize: 18, color: Colors.black54)),
-                            const SizedBox(height: 8),
-                            const Text('Please select items from your cart to proceed.', style: TextStyle(fontSize: 14, color: Colors.black38)),
-                            const SizedBox(height: 20),
-                            ElevatedButton(
-                              onPressed: () => GoRouter.of(context).go('/'),
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white),
-                              child: const Text('VIEW CART / SHOP'),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    return SingleChildScrollView(
-                      padding: EdgeInsets.symmetric(horizontal: isMobile ? 20 : 80, vertical: 40),
-                      child: isMobile
-                          ? Column(children: [_buildForm(), const SizedBox(height: 32), _buildOrderSummary(selectedCart, currency)])
-                          : Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(flex: 3, child: _buildForm()),
-                                const SizedBox(width: 40),
-                                Expanded(flex: 2, child: _buildOrderSummary(selectedCart, currency)),
-                              ],
-                            ),
-                    );
-                  },
                 );
-              },
-            ),
+              }
+
+              return SingleChildScrollView(
+                padding: EdgeInsets.symmetric(horizontal: isMobile ? 20 : 80, vertical: 40),
+                child: isMobile
+                    ? Column(children: [_buildForm(), const SizedBox(height: 32), _buildOrderSummary(selectedCart, currency)])
+                    : Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(flex: 3, child: _buildForm()),
+                          const SizedBox(width: 40),
+                          Expanded(flex: 2, child: _buildOrderSummary(selectedCart, currency)),
+                        ],
+                      ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -230,6 +217,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           _buildField(_phoneController, 'Phone Number', Icons.phone_outlined,
               keyboardType: TextInputType.phone,
               validator: (v) => (v == null || v.trim().length < 10) ? 'Enter a valid phone number' : null),
+          const SizedBox(height: 16),
+
+          _buildField(_emailController, 'Email Address (Optional)', Icons.email_outlined,
+              keyboardType: TextInputType.emailAddress),
           const SizedBox(height: 16),
 
           _buildField(_cityController, 'City', Icons.location_city_outlined,
