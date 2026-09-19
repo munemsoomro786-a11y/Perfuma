@@ -117,15 +117,20 @@ class _FooterWidgetState extends State<FooterWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 60),
-      color: const Color(0xFF111111),
-      child: Column(
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              bool isMobile = constraints.maxWidth < 800;
-              return isMobile
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isMobile = constraints.maxWidth < 800;
+        final bool isSmallScreen = constraints.maxWidth < 650;
+
+        return Container(
+          padding: EdgeInsets.symmetric(
+            vertical: isMobile ? 40 : 80,
+            horizontal: isMobile ? 20 : 60,
+          ),
+          color: const Color(0xFF111111),
+          child: Column(
+            children: [
+              isMobile
                   ? Column(
                       children: _buildFooterColumns(isMobile, context),
                     )
@@ -133,36 +138,65 @@ class _FooterWidgetState extends State<FooterWidget> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: _buildFooterColumns(isMobile, context),
-                    );
-            },
-          ),
-          const SizedBox(height: 60),
-          Divider(color: Colors.grey[800]),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '© 2026 Perfuma Fragrances. All rights reserved.',
-                style: TextStyle(color: Colors.grey[600], fontSize: 13),
-              ),
-              Row(
-                children: [
-                  InkWell(
-                    onTap: () => _showTextDialog(context, 'Privacy Policy', 'Your privacy is important to us. All personal info and order data is kept strictly confidential.'),
-                    child: Text('Privacy Policy', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-                  ),
-                  const SizedBox(width: 24),
-                  InkWell(
-                    onTap: () => _showTextDialog(context, 'Terms of Service', 'By using our website you agree to our terms of purchasing luxury authentic fragrances.'),
-                    child: Text('Terms of Service', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-                  ),
-                ],
-              )
+                    ),
+              SizedBox(height: isMobile ? 40 : 60),
+              Divider(color: Colors.grey[800]),
+              const SizedBox(height: 20),
+              if (isSmallScreen)
+                Column(
+                  children: [
+                    Text(
+                      '© 2026 Perfuma Fragrances. All rights reserved.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        InkWell(
+                          onTap: () => _showTextDialog(context, 'Privacy Policy', 'Your privacy is important to us. All personal info and order data is kept strictly confidential.'),
+                          child: Text('Privacy Policy', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Text('|', style: TextStyle(color: Colors.grey[700], fontSize: 12)),
+                        ),
+                        InkWell(
+                          onTap: () => _showTextDialog(context, 'Terms of Service', 'By using our website you agree to our terms of purchasing luxury authentic fragrances.'),
+                          child: Text('Terms of Service', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                        ),
+                      ],
+                    ),
+                  ],
+                )
+              else
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '© 2026 Perfuma Fragrances. All rights reserved.',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                    ),
+                    Row(
+                      children: [
+                        InkWell(
+                          onTap: () => _showTextDialog(context, 'Privacy Policy', 'Your privacy is important to us. All personal info and order data is kept strictly confidential.'),
+                          child: Text('Privacy Policy', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                        ),
+                        const SizedBox(width: 24),
+                        InkWell(
+                          onTap: () => _showTextDialog(context, 'Terms of Service', 'By using our website you agree to our terms of purchasing luxury authentic fragrances.'),
+                          child: Text('Terms of Service', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

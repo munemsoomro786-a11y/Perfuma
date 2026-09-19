@@ -47,6 +47,7 @@ class NavbarWidget extends StatelessWidget implements PreferredSizeWidget {
         elevation: 0,
         toolbarHeight: 85,
         automaticallyImplyLeading: false,
+        centerTitle: isMobile,
         leading: isMobile
             ? IconButton(
                 icon: const Icon(Icons.menu_rounded, color: Colors.black, size: 28),
@@ -55,7 +56,7 @@ class NavbarWidget extends StatelessWidget implements PreferredSizeWidget {
                 },
               )
             : null,
-        title: const PerfumaLogo(),
+        title: PerfumaLogo(isMobile: isMobile),
         actions: [
           // Desktop Navigation Links (Safe horizontal scroll container)
           if (!isMobile)
@@ -86,38 +87,9 @@ class NavbarWidget extends StatelessWidget implements PreferredSizeWidget {
               ),
             ),
 
-          // Currency Switcher
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFAF9F6),
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: Colors.grey[200]!),
-            ),
-            child: ValueListenableBuilder<String>(
-              valueListenable: currencyNotifier,
-              builder: (context, currency, _) {
-                return DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: currency,
-                    icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: Colors.black),
-                    items: ['PKR', 'USD', 'EUR'].map((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.5)),
-                      );
-                    }).toList(),
-                    onChanged: (String? newValue) {
-                      if (newValue != null) {
-                        currencyNotifier.value = newValue;
-                      }
-                    },
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(width: 8),
+          // Currency Switcher (Sleek hoverable selector)
+          _CurrencySelector(isMobile: isMobile),
+          SizedBox(width: isMobile ? 2 : 8),
 
           // ❤️ Wishlist Icon
           ValueListenableBuilder<Set<String>>(
@@ -127,11 +99,13 @@ class NavbarWidget extends StatelessWidget implements PreferredSizeWidget {
                 alignment: Alignment.center,
                 children: [
                   IconButton(
+                    padding: isMobile ? const EdgeInsets.all(6) : const EdgeInsets.all(8),
+                    constraints: isMobile ? const BoxConstraints() : null,
                     tooltip: 'My Wishlist',
                     icon: Icon(
                       wishlist.isNotEmpty ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                       color: wishlist.isNotEmpty ? const Color(0xFFc9a063) : Colors.black87,
-                      size: 24,
+                      size: isMobile ? 22 : 24,
                     ),
                     onPressed: () {
                       if (FirebaseAuth.instance.currentUser == null) {
@@ -143,8 +117,8 @@ class NavbarWidget extends StatelessWidget implements PreferredSizeWidget {
                   ),
                   if (wishlist.isNotEmpty)
                     Positioned(
-                      right: 6,
-                      top: 6,
+                      right: isMobile ? 2 : 6,
+                      top: isMobile ? 2 : 6,
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: const BoxDecoration(color: Color(0xFFc9a063), shape: BoxShape.circle),
@@ -155,6 +129,7 @@ class NavbarWidget extends StatelessWidget implements PreferredSizeWidget {
               );
             },
           ),
+          SizedBox(width: isMobile ? 2 : 8),
 
           // User Account Button
           StreamBuilder<User?>(
@@ -164,10 +139,10 @@ class NavbarWidget extends StatelessWidget implements PreferredSizeWidget {
               if (user != null) {
                 return PopupMenuButton<String>(
                   tooltip: user.email ?? 'Account',
-                  icon: const CircleAvatar(
-                    radius: 16,
-                    backgroundColor: Color(0xFFc9a063),
-                    child: Icon(Icons.person_outline, color: Colors.white, size: 18),
+                  icon: CircleAvatar(
+                    radius: isMobile ? 14 : 16,
+                    backgroundColor: const Color(0xFFc9a063),
+                    child: Icon(Icons.person_outline, color: Colors.white, size: isMobile ? 16 : 18),
                   ),
                   itemBuilder: (context) => [
                     PopupMenuItem(
@@ -218,18 +193,19 @@ class NavbarWidget extends StatelessWidget implements PreferredSizeWidget {
                   },
                 );
               }
-              return OutlinedButton.icon(
+              return OutlinedButton(
                 onPressed: () => showDialog(context: context, builder: (c) => const AuthDialog()),
-                icon: const Icon(Icons.person_outline, size: 16, color: Colors.black),
-                label: const Text('LOGIN', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, letterSpacing: 1, fontSize: 11)),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Colors.black, width: 1.2),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 14, vertical: isMobile ? 4 : 8),
+                  minimumSize: Size.zero,
                 ),
+                child: Text('LOGIN', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, letterSpacing: 1, fontSize: isMobile ? 10 : 11)),
               );
             },
           ),
+          SizedBox(width: isMobile ? 2 : 8),
 
           // Shopping Bag Badge
           ValueListenableBuilder<List<CartItem>>(
@@ -240,11 +216,13 @@ class NavbarWidget extends StatelessWidget implements PreferredSizeWidget {
                 alignment: Alignment.center,
                 children: [
                   IconButton(
+                    padding: isMobile ? const EdgeInsets.all(6) : const EdgeInsets.all(8),
+                    constraints: isMobile ? const BoxConstraints() : null,
                     tooltip: 'Shopping Bag',
                     icon: Icon(
                       _isActive('/cart') ? Icons.shopping_bag : Icons.shopping_bag_outlined,
                       color: _isActive('/cart') ? const Color(0xFFc9a063) : Colors.black87,
-                      size: 26,
+                      size: isMobile ? 22 : 26,
                     ),
                     onPressed: () {
                       if (scaffoldKey?.currentState?.hasEndDrawer ?? false) {
@@ -256,8 +234,8 @@ class NavbarWidget extends StatelessWidget implements PreferredSizeWidget {
                   ),
                   if (totalItems > 0)
                     Positioned(
-                      right: 4,
-                      top: 4,
+                      right: isMobile ? 2 : 4,
+                      top: isMobile ? 2 : 4,
                       child: Container(
                         padding: const EdgeInsets.all(5),
                         decoration: const BoxDecoration(
@@ -274,7 +252,7 @@ class NavbarWidget extends StatelessWidget implements PreferredSizeWidget {
               );
             },
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: isMobile ? 6 : 14),
         ],
       ),
     );
@@ -342,35 +320,133 @@ class _NavbarLinkState extends State<_NavbarLink> {
   }
 }
 
-class PerfumaLogo extends StatelessWidget {
+class _CurrencySelector extends StatefulWidget {
+  final bool isMobile;
+  const _CurrencySelector({required this.isMobile});
+
+  @override
+  State<_CurrencySelector> createState() => _CurrencySelectorState();
+}
+
+class _CurrencySelectorState extends State<_CurrencySelector> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final goldColor = const Color(0xFFc9a063);
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: ValueListenableBuilder<String>(
+        valueListenable: currencyNotifier,
+        builder: (context, currency, _) {
+          return DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: currency,
+              icon: Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: widget.isMobile ? 16 : 18,
+                color: _isHovered ? goldColor : Colors.black87,
+              ),
+              dropdownColor: Colors.white,
+              alignment: Alignment.center,
+              padding: EdgeInsets.symmetric(
+                horizontal: widget.isMobile ? 4 : 8,
+                vertical: widget.isMobile ? 2 : 4,
+              ),
+              items: ['PKR', 'USD', 'EUR'].map((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 200),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: widget.isMobile ? 11 : 12,
+                      letterSpacing: 0.5,
+                      color: _isHovered ? goldColor : Colors.black87,
+                    ),
+                    child: Text(value),
+                  ),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  currencyNotifier.value = newValue;
+                }
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class PerfumaLogo extends StatefulWidget {
   final double fontSize;
+  final bool isMobile;
 
   const PerfumaLogo({
     super.key,
     this.fontSize = 22,
+    this.isMobile = false,
   });
 
   @override
+  State<PerfumaLogo> createState() => _PerfumaLogoState();
+}
+
+class _PerfumaLogoState extends State<PerfumaLogo> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFAF9F6),
-        border: Border.all(
-          color: const Color(0xFFc9a063),
-          width: 1.5,
-        ),
-        borderRadius: BorderRadius.circular(3),
-      ),
-      child: Text(
-        'PERFUMA',
-        style: TextStyle(
-          fontFamily: 'Georgia',
-          fontFamilyFallback: const ['Playfair Display', 'Cinzel', 'Baskerville', 'serif'],
-          fontSize: fontSize,
-          letterSpacing: 6.0,
-          fontWeight: FontWeight.w600,
-          color: const Color(0xFF111111),
+    const goldColor = Color(0xFFc9a063);
+    final bool highlighted = _isHovered;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => context.go('/'),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          padding: EdgeInsets.symmetric(
+            horizontal: widget.isMobile ? 10 : 18,
+            vertical: widget.isMobile ? 4 : 8,
+          ),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFAF9F6),
+            border: Border.all(
+              color: highlighted ? goldColor : goldColor.withValues(alpha: widget.isMobile ? 0.4 : 0.8),
+              width: highlighted ? 1.8 : 1.2,
+            ),
+            borderRadius: BorderRadius.circular(3),
+            boxShadow: highlighted
+                ? [
+                    BoxShadow(
+                      color: goldColor.withValues(alpha: 0.25),
+                      blurRadius: 12,
+                      spreadRadius: 1,
+                    ),
+                  ]
+                : [],
+          ),
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 250),
+            style: TextStyle(
+              fontFamily: 'Georgia',
+              fontFamilyFallback: const ['Playfair Display', 'Cinzel', 'Baskerville', 'serif'],
+              fontSize: widget.isMobile ? 15 : widget.fontSize,
+              letterSpacing: widget.isMobile ? 2.5 : 5.0,
+              fontWeight: FontWeight.bold,
+              color: highlighted ? goldColor : const Color(0xFF111111),
+            ),
+            child: const Text('PERFUMA'),
+          ),
         ),
       ),
     );
