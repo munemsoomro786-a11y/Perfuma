@@ -1,13 +1,20 @@
 #!/bin/bash
 # Install Flutter and build the web app for Vercel
-echo "Installing Flutter..."
-git clone https://github.com/flutter/flutter.git -b stable
+
+echo "Checking Flutter installation..."
+if [ ! -d "flutter" ]; then
+  git clone https://github.com/flutter/flutter.git -b stable --depth 1
+else
+  echo "Flutter directory already exists."
+fi
+
 export PATH="$PATH:`pwd`/flutter/bin"
 flutter config --enable-web
 
-# Generate firebase_config.dart from environment variables
-echo "Generating Firebase config from environment variables..."
-cat > lib/firebase_config.dart << EOF
+# Generate firebase_config.dart if environment variables exist
+if [ -n "$FIREBASE_API_KEY" ]; then
+  echo "Generating Firebase config from environment variables..."
+  cat > lib/firebase_config.dart << EOF
 import 'package:firebase_core/firebase_core.dart';
 
 class FirebaseConfig {
@@ -21,5 +28,8 @@ class FirebaseConfig {
   );
 }
 EOF
+else
+  echo "Using default firebase_config.dart..."
+fi
 
-flutter build web
+flutter build web --release

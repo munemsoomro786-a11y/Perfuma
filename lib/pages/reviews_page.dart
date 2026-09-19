@@ -176,7 +176,7 @@ class _ReviewsPageScreenState extends State<ReviewsPageScreen> {
                     const SizedBox(height: 12),
                     Wrap(
                       alignment: WrapAlignment.center,
-                      crossAlignment: WrapCrossAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       spacing: 12,
                       runSpacing: 8,
                       children: [
