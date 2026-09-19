@@ -417,7 +417,7 @@ class _PerfumaLogoState extends State<PerfumaLogo> {
         onTap: () => context.go('/'),
         child: Container(
           padding: EdgeInsets.symmetric(
-            horizontal: widget.isMobile ? 4 : 10,
+            horizontal: widget.isMobile ? 2 : 8,
             vertical: widget.isMobile ? 2 : 4,
           ),
           color: Colors.transparent,
@@ -429,9 +429,9 @@ class _PerfumaLogoState extends State<PerfumaLogo> {
                 duration: const Duration(milliseconds: 250),
                 style: TextStyle(
                   fontFamily: 'Georgia',
-                  fontFamilyFallback: const ['Playfair Display', 'Cinzel', 'Baskerville', 'serif'],
-                  fontSize: widget.isMobile ? 16 : widget.fontSize,
-                  letterSpacing: widget.isMobile ? 3.0 : 6.0,
+                  fontFamilyFallback: const ['Cinzel', 'Playfair Display', 'Baskerville', 'serif'],
+                  fontSize: widget.isMobile ? 18 : widget.fontSize,
+                  letterSpacing: widget.isMobile ? 3.5 : 6.0,
                   fontWeight: FontWeight.bold,
                   color: highlighted ? goldColor : const Color(0xFF111111),
                 ),
@@ -442,12 +442,36 @@ class _PerfumaLogoState extends State<PerfumaLogo> {
                   overflow: TextOverflow.visible,
                 ),
               ),
-              const SizedBox(height: 2),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                height: 1.5,
-                width: highlighted ? (widget.isMobile ? 40 : 60) : 0,
-                color: goldColor,
+              const SizedBox(height: 1),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    height: 1,
+                    width: highlighted ? (widget.isMobile ? 14 : 22) : (widget.isMobile ? 8 : 14),
+                    color: goldColor,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(
+                      'PARIS',
+                      style: TextStyle(
+                        fontFamily: 'Helvetica',
+                        fontSize: widget.isMobile ? 7 : 8.5,
+                        letterSpacing: widget.isMobile ? 2.2 : 3.0,
+                        fontWeight: FontWeight.bold,
+                        color: goldColor,
+                      ),
+                    ),
+                  ),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    height: 1,
+                    width: highlighted ? (widget.isMobile ? 14 : 22) : (widget.isMobile ? 8 : 14),
+                    color: goldColor,
+                  ),
+                ],
               ),
             ],
           ),
