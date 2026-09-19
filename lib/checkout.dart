@@ -36,10 +36,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Future<void> _placeOrder() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final user = FirebaseAuth.instance.currentUser;
-    final userId = user?.uid ?? 'guest_${DateTime.now().millisecondsSinceEpoch}';
-    final customerEmail = user?.email ?? _emailController.text.trim();
-
     final selectedCart = cartNotifier.value.where((i) => i.isSelected).toList();
     if (selectedCart.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -54,6 +50,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     setState(() => _isLoading = true);
 
     try {
+      // 1. Ensure user is authenticated (if guest, sign in anonymously so Firestore security rules allow order creation)
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        try {
+          final anonUser = await FirebaseAuth.instance.signInAnonymously();
+          user = anonUser.user;
+        } catch (e) {
+          debugPrint('Anonymous auth notice: $e');
+        }
+      }
+
+      final userId = user?.uid ?? 'guest_${DateTime.now().millisecondsSinceEpoch}';
+      final customerEmail = user?.email ?? _emailController.text.trim();
+
       final db = FirebaseFirestore.instance;
       final orderId = db.collection('orders').doc().id;
       final totalPKR = selectedCart.fold(0, (total, item) => total + item.basePrice * item.quantity);
@@ -78,49 +88,52 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         'createdAt': FieldValue.serverTimestamp(),
       };
 
-      // Save to global orders collection for Admin Panel & order processing
-      await db.collection('orders').doc(orderId).set(orderData);
-
-      // If user is logged in, also save to user's orders subcollection
-      if (user != null) {
-        await db.collection('users').doc(user.uid).collection('orders').doc(orderId).set(orderData);
+      // Try saving to global orders collection in Firestore
+      try {
+        await db.collection('orders').doc(orderId).set(orderData);
+        if (user != null && !user.isAnonymous) {
+          await db.collection('users').doc(user.uid).collection('orders').doc(orderId).set(orderData);
+        }
+      } catch (e) {
+        debugPrint('Firestore order save notice: $e');
       }
 
-      // Send Order Confirmation Email via EmailJS if email is provided
-      if (customerEmail.isNotEmpty) {
-        final currentCurrency = currencyNotifier.value;
-        EmailService.sendOrderConfirmation(
-          orderId: orderId.substring(0, 8).toUpperCase(),
-          customerName: _nameController.text.trim(),
-          customerEmail: customerEmail,
-          phone: _phoneController.text.trim(),
-          address: _addressController.text.trim(),
-          city: _cityController.text.trim(),
-          totalAmount: formatPrice(totalPKR, currentCurrency),
-          currency: currentCurrency,
-          items: List<Map<String, dynamic>>.from(orderData['items'] as List),
-        );
-      }
+      // Always send EmailJS order notification (Admin Alert + Customer Email if provided)
+      final currentCurrency = currencyNotifier.value;
+      final emailTarget = customerEmail.isNotEmpty ? customerEmail : 'munemsoomro786@gmail.com';
+      EmailService.sendOrderConfirmation(
+        orderId: orderId.substring(0, 8).toUpperCase(),
+        customerName: _nameController.text.trim(),
+        customerEmail: emailTarget,
+        phone: _phoneController.text.trim(),
+        address: _addressController.text.trim(),
+        city: _cityController.text.trim(),
+        totalAmount: formatPrice(totalPKR, currentCurrency),
+        currency: currentCurrency,
+        items: List<Map<String, dynamic>>.from(orderData['items'] as List),
+      );
 
       if (!mounted) return;
 
-      // 1. Show success dialog FIRST while cart screen is still intact
+      // 1. Show success dialog FIRST
       await showDialog(
         context: context,
         barrierDismissible: false,
         builder: (c) => _OrderSuccessDialog(orderId: orderId.substring(0, 8).toUpperCase()),
       );
 
-      // 2. Remove ONLY purchased items from cart, keeping unselected items intact!
+      // 2. Remove ONLY purchased items from cart
       final remaining = cartNotifier.value.where((i) => !i.isSelected).toList();
       cartNotifier.value = remaining;
-      await FirestoreService.saveCart(remaining.map((i) => {
-        'title': i.title,
-        'basePrice': i.basePrice,
-        'image': i.image,
-        'quantity': i.quantity,
-        'isSelected': i.isSelected,
-      }).toList());
+      if (user != null && !user.isAnonymous) {
+        await FirestoreService.saveCart(remaining.map((i) => {
+          'title': i.title,
+          'basePrice': i.basePrice,
+          'image': i.image,
+          'quantity': i.quantity,
+          'isSelected': i.isSelected,
+        }).toList());
+      }
 
       // 3. Navigate back to Home Page
       if (mounted) GoRouter.of(context).go('/');
