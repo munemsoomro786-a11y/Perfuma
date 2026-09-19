@@ -174,14 +174,20 @@ class _ReviewsPageScreenState extends State<ReviewsPageScreen> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAlignment: WrapCrossAlignment.center,
+                      spacing: 12,
+                      runSpacing: 8,
                       children: [
-                        ...List.generate(5, (_) => const Icon(Icons.star, color: Color(0xFFc9a063), size: 24)),
-                        const SizedBox(width: 10),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: List.generate(5, (_) => const Icon(Icons.star, color: Color(0xFFc9a063), size: 20)),
+                        ),
                         const Text(
                           '4.9 out of 5 Stars (1,240+ Verified Reviews)',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                         ),
                       ],
                     ),
@@ -202,79 +208,33 @@ class _ReviewsPageScreenState extends State<ReviewsPageScreen> {
               ),
 
               // Reviews Grid
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 40),
-                color: Colors.white,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    bool isWide = constraints.maxWidth > 800;
-                    return GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: isWide ? 2 : 1,
-                      crossAxisSpacing: 30,
-                      mainAxisSpacing: 30,
-                      childAspectRatio: isWide ? 1.7 : 1.4,
-                      children: _reviewsList.map((rev) {
-                        return Container(
-                          padding: const EdgeInsets.all(30),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFAF9F6),
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: Colors.grey[300]!),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  bool isWide = constraints.maxWidth > 800;
+                  return Container(
+                    padding: EdgeInsets.symmetric(
+                      vertical: 50,
+                      horizontal: isWide ? 40 : 16,
+                    ),
+                    color: Colors.white,
+                    child: !isWide
+                        ? Column(
+                            children: _reviewsList.map((rev) => Padding(
+                              padding: const EdgeInsets.only(bottom: 20),
+                              child: _buildReviewCard(rev),
+                            )).toList(),
+                          )
+                        : GridView.count(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 30,
+                            mainAxisSpacing: 30,
+                            childAspectRatio: 1.6,
+                            children: _reviewsList.map((rev) => _buildReviewCard(rev)).toList(),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Row(
-                                        children: List.generate(
-                                          rev['rating'] as int,
-                                          (_) => const Icon(Icons.star, color: Color(0xFFc9a063), size: 18),
-                                        ),
-                                      ),
-                                      Text(rev['date'], style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    '"${rev['comment']}"',
-                                    style: const TextStyle(fontSize: 16, height: 1.6, fontStyle: FontStyle.italic),
-                                  ),
-                                ],
-                              ),
-                              Row(
-                                children: [
-                                  CircleAvatar(
-                                    backgroundColor: const Color(0xFFc9a063).withOpacity(0.2),
-                                    child: Text(
-                                      (rev['name'] as String)[0],
-                                      style: const TextStyle(color: Color(0xFFc9a063), fontWeight: FontWeight.bold),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(rev['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                                      Text(rev['location'], style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-                                    ],
-                                  ),
-                                ],
-                              )
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    );
-                  },
-                ),
+                  );
+                },
               ),
 
               // Bottom CTA
@@ -304,6 +264,60 @@ class _ReviewsPageScreenState extends State<ReviewsPageScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildReviewCard(Map<String, dynamic> rev) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFAF9F6),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: List.generate(
+                  rev['rating'] as int,
+                  (_) => const Icon(Icons.star, color: Color(0xFFc9a063), size: 18),
+                ),
+              ),
+              Text(rev['date'], style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            '"${rev['comment']}"',
+            style: const TextStyle(fontSize: 15, height: 1.6, fontStyle: FontStyle.italic),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: const Color(0xFFc9a063).withValues(alpha: 0.2),
+                child: Text(
+                  (rev['name'] as String)[0],
+                  style: const TextStyle(color: Color(0xFFc9a063), fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(rev['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  Text(rev['location'], style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                ],
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

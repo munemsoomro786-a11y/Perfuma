@@ -208,7 +208,7 @@ class StoryPageScreen extends StatelessWidget {
 
               // 4. Guiding Principles Section
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 90, horizontal: 40),
+                padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
                 color: Colors.white,
                 child: Center(
                   child: ConstrainedBox(
@@ -217,23 +217,53 @@ class StoryPageScreen extends StatelessWidget {
                       children: [
                         const Text(
                           'OUR GUIDING PRINCIPLES',
+                          textAlign: TextAlign.center,
                           style: TextStyle(
                             fontFamily: 'Georgia',
-                            fontSize: 32,
+                            fontSize: 30,
                             letterSpacing: 1.5,
                           ),
                         ),
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 35),
                         LayoutBuilder(
                           builder: (context, constraints) {
                             bool isWide = constraints.maxWidth > 650;
+                            if (!isWide) {
+                              return const Column(
+                                children: [
+                                  _ValueCard(
+                                    icon: Icons.local_florist_outlined,
+                                    title: '100% Vegan & Cruelty Free',
+                                    description: 'Zero animal testing. Pure botanical formulations crafted with conscience.',
+                                  ),
+                                  SizedBox(height: 20),
+                                  _ValueCard(
+                                    icon: Icons.auto_awesome_outlined,
+                                    title: 'Master Perfumer Formulations',
+                                    description: 'Complex scent pyramids with top, heart, and base notes that evolve gracefully over 12+ hours.',
+                                  ),
+                                  SizedBox(height: 20),
+                                  _ValueCard(
+                                    icon: Icons.eco_outlined,
+                                    title: 'Sustainable Packaging',
+                                    description: 'Recyclable crystal glass bottles and FSC-certified minimalist eco cartons.',
+                                  ),
+                                  SizedBox(height: 20),
+                                  _ValueCard(
+                                    icon: Icons.card_giftcard_outlined,
+                                    title: 'Signature Gift Presentation',
+                                    description: 'Every bottle arrives wrapped in luxury silk paper with personalized wax seals.',
+                                  ),
+                                ],
+                              );
+                            }
                             return GridView.count(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              crossAxisCount: isWide ? 2 : 1,
+                              crossAxisCount: 2,
                               crossAxisSpacing: 30,
                               mainAxisSpacing: 30,
-                              childAspectRatio: isWide ? 1.6 : 2.0,
+                              childAspectRatio: 1.6,
                               children: const [
                                 _ValueCard(
                                   icon: Icons.local_florist_outlined,
@@ -344,13 +374,13 @@ class StoryPageScreen extends StatelessWidget {
         ),
         const SizedBox(height: 30),
 
-        // Badges Row
-        Row(
+        // Badges Row (Using Wrap for mobile screen protection!)
+        Wrap(
+          spacing: 24,
+          runSpacing: 16,
           children: [
             _buildBadge('PARIS & PAKISTAN', 'Design & Hubs'),
-            const SizedBox(width: 30),
             _buildBadge('12+ HOURS', 'Scent Longevity'),
-            const SizedBox(width: 30),
             _buildBadge('100% PURE', 'Botanical Oils'),
           ],
         ),
