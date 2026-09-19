@@ -56,7 +56,10 @@ class NavbarWidget extends StatelessWidget implements PreferredSizeWidget {
                 },
               )
             : null,
-        title: PerfumaLogo(isMobile: isMobile),
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: PerfumaLogo(isMobile: isMobile),
+        ),
         actions: [
           // Desktop Navigation Links (Safe horizontal scroll container)
           if (!isMobile)
@@ -412,40 +415,41 @@ class _PerfumaLogoState extends State<PerfumaLogo> {
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: () => context.go('/'),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
+        child: Container(
           padding: EdgeInsets.symmetric(
-            horizontal: widget.isMobile ? 10 : 18,
-            vertical: widget.isMobile ? 4 : 8,
+            horizontal: widget.isMobile ? 4 : 10,
+            vertical: widget.isMobile ? 2 : 4,
           ),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFAF9F6),
-            border: Border.all(
-              color: highlighted ? goldColor : goldColor.withValues(alpha: widget.isMobile ? 0.4 : 0.8),
-              width: highlighted ? 1.8 : 1.2,
-            ),
-            borderRadius: BorderRadius.circular(3),
-            boxShadow: highlighted
-                ? [
-                    BoxShadow(
-                      color: goldColor.withValues(alpha: 0.25),
-                      blurRadius: 12,
-                      spreadRadius: 1,
-                    ),
-                  ]
-                : [],
-          ),
-          child: AnimatedDefaultTextStyle(
-            duration: const Duration(milliseconds: 250),
-            style: TextStyle(
-              fontFamily: 'Georgia',
-              fontFamilyFallback: const ['Playfair Display', 'Cinzel', 'Baskerville', 'serif'],
-              fontSize: widget.isMobile ? 15 : widget.fontSize,
-              letterSpacing: widget.isMobile ? 2.5 : 5.0,
-              fontWeight: FontWeight.bold,
-              color: highlighted ? goldColor : const Color(0xFF111111),
-            ),
-            child: const Text('PERFUMA'),
+          color: Colors.transparent,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 250),
+                style: TextStyle(
+                  fontFamily: 'Georgia',
+                  fontFamilyFallback: const ['Playfair Display', 'Cinzel', 'Baskerville', 'serif'],
+                  fontSize: widget.isMobile ? 16 : widget.fontSize,
+                  letterSpacing: widget.isMobile ? 3.0 : 6.0,
+                  fontWeight: FontWeight.bold,
+                  color: highlighted ? goldColor : const Color(0xFF111111),
+                ),
+                child: const Text(
+                  'PERFUMA',
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.visible,
+                ),
+              ),
+              const SizedBox(height: 2),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                height: 1.5,
+                width: highlighted ? (widget.isMobile ? 40 : 60) : 0,
+                color: goldColor,
+              ),
+            ],
           ),
         ),
       ),
