@@ -233,7 +233,7 @@ class _ContactPageScreenState extends State<ContactPageScreen> {
                             return _FaqTileWidget(
                               question: faq['question']!,
                               answer: faq['answer']!,
-                              initiallyExpanded: index == 0,
+                              initiallyExpanded: false,
                             );
                           },
                         ),
