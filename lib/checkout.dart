@@ -82,9 +82,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       // 1. Ensure valid Firebase Auth session so Firestore Security Rules allow writing to orders collection
       User? user = await _ensureAuthForCheckout();
       final userId = user?.uid ?? 'guest_${DateTime.now().millisecondsSinceEpoch}';
-      final customerEmail = _emailController.text.trim().isNotEmpty
-          ? _emailController.text.trim()
-          : (user?.email ?? '');
+      final enteredEmail = _emailController.text.trim();
+      final customerEmail = enteredEmail.isNotEmpty
+          ? enteredEmail
+          : ((user != null && !user.isAnonymous && user.email != 'guest.checkout@perfuma.com')
+              ? (user.email ?? '')
+              : '');
 
       final db = FirebaseFirestore.instance;
       final orderId = db.collection('orders').doc().id;
@@ -118,13 +121,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         await db.collection('users').doc(user.uid).collection('orders').doc(orderId).set(orderData);
       }
 
-      // Always send EmailJS order notification (Admin Alert + Customer Email if provided)
+      // Always send EmailJS order notification (Admin Alert + Customer Email if valid email provided)
       final currentCurrency = currencyNotifier.value;
-      final emailTarget = customerEmail.isNotEmpty ? customerEmail : 'munemsoomro786@gmail.com';
       EmailService.sendOrderConfirmation(
         orderId: orderId.substring(0, 8).toUpperCase(),
         customerName: _nameController.text.trim(),
-        customerEmail: emailTarget,
+        customerEmail: customerEmail,
         phone: _phoneController.text.trim(),
         address: _addressController.text.trim(),
         city: _cityController.text.trim(),

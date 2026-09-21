@@ -67,34 +67,44 @@ class EmailService {
         };
       }).toList();
 
-      final body = {
-        'service_id': _serviceId,
-        'template_id': _templateId,
-        'user_id': _publicKey,
-        'template_params': {
-          'email': customerEmail,
-          'order_id': orderId,
-          'orders': orderItemsList,
-          'logo': 'https://perfuma-fragrances.vercel.app/og-image.jpg',
-          'cost': {
-            'shipping': '0.00 (FREE)',
-            'tax': '0.00',
-            'total': totalAmount,
+      final trimmedCustomerEmail = customerEmail.trim();
+      final isValidCustomerEmail = trimmedCustomerEmail.isNotEmpty &&
+          trimmedCustomerEmail.contains('@') &&
+          !trimmedCustomerEmail.endsWith('@perfuma.com') &&
+          !trimmedCustomerEmail.endsWith('@example.com');
+
+      if (isValidCustomerEmail) {
+        final body = {
+          'service_id': _serviceId,
+          'template_id': _templateId,
+          'user_id': _publicKey,
+          'template_params': {
+            'email': trimmedCustomerEmail,
+            'order_id': orderId,
+            'orders': orderItemsList,
+            'logo': 'https://perfuma-fragrances.vercel.app/og-image.jpg',
+            'cost': {
+              'shipping': '0.00 (FREE)',
+              'tax': '0.00',
+              'total': totalAmount,
+            },
+            'customer_name': customerName,
+            'phone': phone,
+            'address': '$address, $city',
           },
-          'customer_name': customerName,
-          'phone': phone,
-          'address': '$address, $city',
-        },
-      };
+        };
 
-      // 1. Send Customer Confirmation
-      await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
-      );
+        // 1. Send Customer Confirmation
+        try {
+          await http.post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(body),
+          );
+        } catch (_) {}
+      }
 
-      // 2. Send Admin Alert Email
+      // 2. Send Admin Alert Email (Always to store admin)
       final adminBody = {
         'service_id': _serviceId,
         'template_id': _templateId,
@@ -109,7 +119,7 @@ class EmailService {
             'tax': '0.00',
             'total': totalAmount,
           },
-          'customer_name': 'ADMIN - Order for $customerName ($phone)',
+          'customer_name': 'ADMIN - Order for $customerName ($phone)${isValidCustomerEmail ? '' : ' [No Email / Guest]'}',
           'phone': phone,
           'address': '$address, $city',
         },
